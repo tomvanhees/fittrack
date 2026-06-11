@@ -21,7 +21,33 @@ npm install
 npm start          # Expo dev server
 npm run android    # of: npm run ios
 npm run typecheck  # tsc --noEmit
+npm test           # jest
 ```
+
+## Android build (APK) op een toestel
+
+Builds draaien op je eigen machine, niet in een remote omgeving. Voor een
+installeerbare APK via [EAS](https://docs.expo.dev/build/introduction/) (cloud,
+geen Android Studio of betaald account nodig):
+
+```bash
+npm install -g eas-cli
+eas login                                 # gratis Expo-account
+eas build -p android --profile preview    # bouwt een APK (internal distribution)
+```
+
+EAS geeft een download-URL terug — open die op het toestel, download de APK en
+installeer ze (sta eenmalig "onbekende bronnen" toe).
+
+Lokaal bouwen kan ook, met Android Studio + USB-debugging ingeschakeld:
+
+```bash
+npx expo run:android --device
+```
+
+De build-profielen staan in [`eas.json`](eas.json): `preview` (APK om te
+sideloaden), `development` (dev client) en `production` (AAB voor de Play Store).
+Een eigen app-icoon is optioneel — zonder asset gebruikt de build het Expo-icoon.
 
 ## Projectstructuur
 
