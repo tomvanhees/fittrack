@@ -1,6 +1,7 @@
 // jest.setup.js
 
-import '@testing-library/react-native/extend-expect';
+// RNTL v13+ registreert zijn Jest-matchers automatisch; de aparte
+// '@testing-library/react-native/extend-expect'-import bestaat niet meer.
 
 // @expo/vector-icons laadt fonts via een native module dat onder Jest niet
 // bestaat. We vervangen elke icon-set door een lichtgewicht stub zodat

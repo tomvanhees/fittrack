@@ -8,7 +8,7 @@ oefening, en zie meteen de progressie t.o.v. de vorige sessie.
 
 | Onderdeel | Keuze |
 |---|---|
-| Framework | React Native + Expo (SDK 51) |
+| Framework | React Native 0.85 + Expo (SDK 56, new architecture) |
 | Database | `expo-sqlite` (lokaal, relationeel) |
 | Navigatie | Expo Router (file-based) + Bottom Tabs |
 | State | Zustand |
@@ -16,38 +16,52 @@ oefening, en zie meteen de progressie t.o.v. de vorige sessie.
 
 ## Aan de slag
 
+Dit is een **development build** project — geen Expo Go. Expo Go ondersteunt
+alleen de nieuwste SDK en draait Expo's generieke shell i.p.v. de echte native
+binary, dus we bouwen een eigen dev client. De JS-ontwikkelloop (fast refresh)
+blijft identiek.
+
 ```bash
-npm install
-npm start          # Expo dev server
-npm run android    # of: npm run ios
-npm run typecheck  # tsc --noEmit
-npm test           # jest
+npm install                  # gebruik --legacy-peer-deps indien nodig (zie .npmrc)
+npx expo run:android         # bouwt + installeert de dev client lokaal (1e keer traag)
+npm start                    # Metro dev server — dev client verbindt automatisch
+npm run typecheck            # tsc --noEmit
+npm test                     # jest
 ```
 
-## Android build (APK) op een toestel
+Na de eerste `expo run:android` is de dagelijkse loop gewoon `npm start`: de
+dev-client-app op toestel/emulator verbindt met Metro en je krijgt fast refresh
+op elke JS-save. Opnieuw `expo run:android` draaien hoeft **alleen** wanneer
+native dependencies of native config in `app.json` wijzigen.
 
-Builds draaien op je eigen machine, niet in een remote omgeving. Voor een
-installeerbare APK via [EAS](https://docs.expo.dev/build/introduction/) (cloud,
-geen Android Studio of betaald account nodig):
+### Vereisten voor lokaal bouwen
+
+- Android Studio + Android SDK (`ANDROID_HOME` ingesteld), JDK 17
+- Een draaiende emulator of een toestel met USB-debugging (`npx expo run:android --device`)
+
+### Distribueerbare build (APK / Play Store)
+
+Voor een installeerbare APK of een Play Store-bundle via
+[EAS](https://docs.expo.dev/build/introduction/) (cloud, geen lokale toolchain
+nodig):
 
 ```bash
 npm install -g eas-cli
-eas login                                 # gratis Expo-account
-eas build -p android --profile preview    # bouwt een APK (internal distribution)
+eas login                                  # gratis Expo-account
+eas build -p android --profile preview     # APK (internal distribution)
+eas build -p android --profile production  # AAB voor de Play Store
 ```
 
-EAS geeft een download-URL terug — open die op het toestel, download de APK en
-installeer ze (sta eenmalig "onbekende bronnen" toe).
+De build-profielen staan in [`eas.json`](eas.json): `development` (dev client),
+`preview` (APK om te sideloaden) en `production` (AAB). Een eigen app-icoon is
+optioneel — zonder asset gebruikt de build het Expo-icoon.
 
-Lokaal bouwen kan ook, met Android Studio + USB-debugging ingeschakeld:
+> **16 KB page size:** Google Play vereist 16 KB-uitgelijnde native libraries.
+> SDK 56 (RN 0.85) levert deze standaard — vandaar dat de oude 16 KB-waarschuwing
+> verdwijnt zodra je met een SDK 56-build draait i.p.v. een oude build.
 
-```bash
-npx expo run:android --device
-```
-
-De build-profielen staan in [`eas.json`](eas.json): `preview` (APK om te
-sideloaden), `development` (dev client) en `production` (AAB voor de Play Store).
-Een eigen app-icoon is optioneel — zonder asset gebruikt de build het Expo-icoon.
+De native mappen `android/` en `ios/` worden gegenereerd (CNG) en staan in
+`.gitignore` — niet handmatig bewerken; ze worden uit `app.json` herbouwd.
 
 ## Projectstructuur
 
