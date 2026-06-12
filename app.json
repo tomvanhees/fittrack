@@ -6,11 +6,6 @@
     "orientation": "portrait",
     "scheme": "fittrack",
     "userInterfaceStyle": "dark",
-    "newArchEnabled": true,
-    "splash": {
-      "resizeMode": "contain",
-      "backgroundColor": "#0B0F14"
-    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "be.mobilevikings.fittrack"
@@ -23,7 +18,16 @@
       "output": "static"
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#0B0F14"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
