@@ -14,6 +14,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { EmptyState } from '@/components/shared/EmptyState';
+import { CategoryPicker } from '@/components/shared/CategoryPicker';
+import { KeyboardAvoider } from '@/components/shared/KeyboardAvoider';
 import { useLibraryStore } from '@/store/libraryStore';
 import { CATEGORIES, categoryColor, categoryLabel } from '@/constants/categories';
 import { colors, fontSize, radius, spacing } from '@/constants/colors';
@@ -29,9 +31,11 @@ export default function LibraryScreen() {
     setCategory,
     getFiltered,
     addCustomExercise,
+    updateCustomExercise,
   } = useLibraryStore();
 
-  const [addVisible, setAddVisible] = useState(false);
+  const [sheetVisible, setSheetVisible] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [newName, setNewName] = useState('');
   const [newCategory, setNewCategory] = useState<Category>('custom');
 
@@ -49,13 +53,32 @@ export default function LibraryScreen() {
     router.push({ pathname: '/modals/exercise-detail', params: { id: String(ex.id) } });
   }
 
-  function handleAdd() {
-    const name = newName.trim();
-    if (name.length === 0) return;
-    addCustomExercise(name, newCategory);
+  function openAdd() {
+    setEditingId(null);
     setNewName('');
     setNewCategory('custom');
-    setAddVisible(false);
+    setSheetVisible(true);
+  }
+
+  function openEdit(ex: Exercise) {
+    setEditingId(ex.id);
+    setNewName(ex.name);
+    setNewCategory(ex.category);
+    setSheetVisible(true);
+  }
+
+  function handleSave() {
+    const name = newName.trim();
+    if (name.length === 0) return;
+    if (editingId !== null) {
+      updateCustomExercise(editingId, name, newCategory);
+    } else {
+      addCustomExercise(name, newCategory);
+    }
+    setSheetVisible(false);
+    setEditingId(null);
+    setNewName('');
+    setNewCategory('custom');
   }
 
   function renderRow(ex: Exercise) {
@@ -66,7 +89,17 @@ export default function LibraryScreen() {
           {ex.name}
         </Text>
         <Text style={styles.rowCat}>{categoryLabel(ex.category)}</Text>
-        <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+        {ex.isCustom ? (
+          <Pressable
+            onPress={() => openEdit(ex)}
+            hitSlop={8}
+            accessibilityLabel={`${ex.name} bewerken`}
+          >
+            <Ionicons name="pencil" size={16} color={colors.primary} />
+          </Pressable>
+        ) : (
+          <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+        )}
       </Pressable>
     );
   }
@@ -135,62 +168,50 @@ export default function LibraryScreen() {
 
       <Pressable
         style={[styles.fab, { bottom: insets.bottom + spacing.lg }]}
-        onPress={() => setAddVisible(true)}
+        onPress={openAdd}
       >
         <Ionicons name="add" size={20} color={colors.primaryText} />
         <Text style={styles.fabText}>Eigen oefening</Text>
       </Pressable>
 
       <Modal
-        visible={addVisible}
+        visible={sheetVisible}
         transparent
         animationType="slide"
-        onRequestClose={() => setAddVisible(false)}
+        onRequestClose={() => setSheetVisible(false)}
       >
-        <Pressable style={styles.backdrop} onPress={() => setAddVisible(false)}>
-          <Pressable style={[styles.sheet, { paddingBottom: insets.bottom + spacing.lg }]}>
-            <View style={styles.sheetHandle} />
-            <Text style={styles.sheetTitle}>Eigen oefening toevoegen</Text>
+        <KeyboardAvoider style={styles.flex} behavior="padding">
+          <Pressable style={styles.backdrop} onPress={() => setSheetVisible(false)}>
+            <Pressable style={[styles.sheet, { paddingBottom: insets.bottom + spacing.lg }]}>
+              <View style={styles.sheetHandle} />
+              <Text style={styles.sheetTitle}>
+                {editingId !== null ? 'Oefening bewerken' : 'Eigen oefening toevoegen'}
+              </Text>
 
-            <TextInput
-              value={newName}
-              onChangeText={setNewName}
-              placeholder="Naam"
-              placeholderTextColor={colors.textFaint}
-              style={styles.nameInput}
-              autoFocus
-            />
+              <TextInput
+                value={newName}
+                onChangeText={setNewName}
+                placeholder="Naam"
+                placeholderTextColor={colors.textFaint}
+                style={styles.nameInput}
+                autoFocus
+              />
 
-            <Text style={styles.fieldLabel}>Categorie</Text>
-            <View style={styles.catGrid}>
-              {CATEGORIES.map((c) => {
-                const active = newCategory === c.key;
-                return (
-                  <Pressable
-                    key={c.key}
-                    onPress={() => setNewCategory(c.key)}
-                    style={[
-                      styles.catChip,
-                      active && { backgroundColor: c.color, borderColor: c.color },
-                    ]}
-                  >
-                    <Text style={[styles.catChipText, active && styles.catChipTextActive]}>
-                      {c.label}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
+              <Text style={styles.fieldLabel}>Categorie</Text>
+              <CategoryPicker value={newCategory} onChange={setNewCategory} />
 
-            <Pressable
-              style={[styles.saveBtn, newName.trim().length === 0 && styles.saveBtnDisabled]}
-              onPress={handleAdd}
-              disabled={newName.trim().length === 0}
-            >
-              <Text style={styles.saveBtnText}>Toevoegen</Text>
+              <Pressable
+                style={[styles.saveBtn, newName.trim().length === 0 && styles.saveBtnDisabled]}
+                onPress={handleSave}
+                disabled={newName.trim().length === 0}
+              >
+                <Text style={styles.saveBtnText}>
+                  {editingId !== null ? 'Opslaan' : 'Toevoegen'}
+                </Text>
+              </Pressable>
             </Pressable>
           </Pressable>
-        </Pressable>
+        </KeyboardAvoider>
       </Modal>
     </View>
   );
@@ -200,7 +221,10 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: colors.background,
-    paddingTop: spacing.xl + spacing.lg,
+    paddingTop: spacing.md,
+  },
+  flex: {
+    flex: 1,
   },
   searchWrap: {
     flexDirection: 'row',
@@ -350,27 +374,6 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: fontSize.sm,
     fontWeight: '600',
-  },
-  catGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
-  catChip: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: 8,
-    borderRadius: radius.pill,
-    backgroundColor: colors.surfaceAlt,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  catChipText: {
-    color: colors.textMuted,
-    fontSize: fontSize.sm,
-    fontWeight: '600',
-  },
-  catChipTextActive: {
-    color: colors.primaryText,
   },
   saveBtn: {
     backgroundColor: colors.primary,

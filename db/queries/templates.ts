@@ -57,7 +57,9 @@ export interface TemplateSummary extends WeekTemplate {
 
 export function getAllTemplates(): TemplateSummary[] {
   const templates = db
-    .getAllSync<TemplateRow>('SELECT * FROM week_templates ORDER BY created_at DESC, id DESC')
+    .getAllSync<TemplateRow>(
+      'SELECT * FROM week_templates WHERE deleted = 0 ORDER BY created_at DESC, id DESC'
+    )
     .map(mapTemplate);
 
   return templates.map((t) => {
@@ -65,8 +67,10 @@ export function getAllTemplates(): TemplateSummary[] {
       `SELECT DISTINCT td.weekday AS weekday
          FROM template_days td
         WHERE td.template_id = ?
+          AND td.deleted = 0
           AND EXISTS (
-            SELECT 1 FROM template_day_exercises tde WHERE tde.template_day_id = td.id
+            SELECT 1 FROM template_day_exercises tde
+             WHERE tde.template_day_id = td.id AND tde.deleted = 0
           )
         ORDER BY (td.weekday + 6) % 7 ASC`,
       [t.id]
@@ -90,22 +94,36 @@ export function updateTemplateName(id: number, name: string): void {
 }
 
 export function deleteTemplate(id: number): void {
-  db.runSync('DELETE FROM week_templates WHERE id = ?', [id]);
+  // Soft-delete het sjabloon én zijn dagen + dag-oefeningen (tombstones).
+  db.withTransactionSync(() => {
+    db.runSync(
+      `UPDATE template_day_exercises SET deleted = 1
+        WHERE deleted = 0 AND template_day_id IN (
+          SELECT id FROM template_days WHERE template_id = ?
+        )`,
+      [id]
+    );
+    db.runSync('UPDATE template_days SET deleted = 1 WHERE template_id = ? AND deleted = 0', [id]);
+    db.runSync('UPDATE week_templates SET deleted = 1 WHERE id = ?', [id]);
+  });
 }
 
 export function getTemplateWithDays(id: number): TemplateWithDays | null {
-  const row = db.getFirstSync<TemplateRow>('SELECT * FROM week_templates WHERE id = ?', [id]);
+  const row = db.getFirstSync<TemplateRow>(
+    'SELECT * FROM week_templates WHERE id = ? AND deleted = 0',
+    [id]
+  );
   if (!row) return null;
 
   const dayRows = db.getAllSync<TemplateDayRow>(
-    'SELECT * FROM template_days WHERE template_id = ? ORDER BY (weekday + 6) % 7 ASC',
+    'SELECT * FROM template_days WHERE template_id = ? AND deleted = 0 ORDER BY (weekday + 6) % 7 ASC',
     [id]
   );
 
   const days: TemplateDayWithExercises[] = dayRows.map((dr) => {
     const day = mapDay(dr);
     const exRows = db.getAllSync<TemplateDayExerciseRow>(
-      'SELECT * FROM template_day_exercises WHERE template_day_id = ? ORDER BY sort_order ASC, id ASC',
+      'SELECT * FROM template_day_exercises WHERE template_day_id = ? AND deleted = 0 ORDER BY sort_order ASC, id ASC',
       [dr.id]
     );
     const exercises = exRows
@@ -132,10 +150,21 @@ export function getTemplateWithDays(id: number): TemplateWithDays | null {
 
 export function getOrCreateTemplateDay(templateId: number, weekday: number): TemplateDay {
   const existing = db.getFirstSync<TemplateDayRow>(
-    'SELECT * FROM template_days WHERE template_id = ? AND weekday = ?',
+    'SELECT * FROM template_days WHERE template_id = ? AND weekday = ? AND deleted = 0',
     [templateId, weekday]
   );
   if (existing) return mapDay(existing);
+
+  // Een eerder soft-deleted dag voor deze weekdag nieuw leven inblazen i.p.v.
+  // een duplicaat aanmaken.
+  const tomb = db.getFirstSync<TemplateDayRow>(
+    'SELECT * FROM template_days WHERE template_id = ? AND weekday = ? AND deleted = 1',
+    [templateId, weekday]
+  );
+  if (tomb) {
+    db.runSync('UPDATE template_days SET deleted = 0 WHERE id = ?', [tomb.id]);
+    return mapDay({ ...tomb, label: tomb.label });
+  }
 
   const result = db.runSync(
     'INSERT INTO template_days (template_id, weekday) VALUES (?, ?)',
@@ -158,7 +187,13 @@ export function setTemplateDayLabel(templateDayId: number, label: string): void 
 }
 
 export function deleteTemplateDay(templateDayId: number): void {
-  db.runSync('DELETE FROM template_days WHERE id = ?', [templateDayId]);
+  db.withTransactionSync(() => {
+    db.runSync(
+      'UPDATE template_day_exercises SET deleted = 1 WHERE template_day_id = ? AND deleted = 0',
+      [templateDayId]
+    );
+    db.runSync('UPDATE template_days SET deleted = 1 WHERE id = ?', [templateDayId]);
+  });
 }
 
 // ---------- Template day exercises ----------
@@ -190,7 +225,7 @@ export function updateTemplateDayExerciseSets(
 }
 
 export function removeTemplateDayExercise(templateDayExerciseId: number): void {
-  db.runSync('DELETE FROM template_day_exercises WHERE id = ?', [templateDayExerciseId]);
+  db.runSync('UPDATE template_day_exercises SET deleted = 1 WHERE id = ?', [templateDayExerciseId]);
 }
 
 // ---------- Apply template ----------
@@ -214,10 +249,14 @@ export function applyTemplateToWeek(templateId: number, targetDate: string): voi
       const date = weekDates[dateIndex];
       const day = getOrCreateWorkoutDay(date);
 
-      // Bestaande oefeningen van die dag wissen.
+      // Bestaande oefeningen van die dag wissen (soft-delete incl. hun sets).
       const existing = getWorkoutExercises(day.id);
       for (const we of existing) {
-        db.runSync('DELETE FROM workout_exercises WHERE id = ?', [we.id]);
+        db.runSync(
+          'UPDATE workout_sets SET deleted = 1 WHERE workout_exercise_id = ? AND deleted = 0',
+          [we.id]
+        );
+        db.runSync('UPDATE workout_exercises SET deleted = 1 WHERE id = ?', [we.id]);
       }
 
       // Koppel de template-dag.
@@ -244,7 +283,7 @@ export function weekHasExercises(targetDate: string): boolean {
     `SELECT COUNT(*) AS count
        FROM workout_exercises we
        JOIN workout_days wd ON wd.id = we.workout_day_id
-      WHERE wd.date IN (${placeholders})`,
+      WHERE wd.date IN (${placeholders}) AND we.deleted = 0`,
     weekDates
   );
   return (row?.count ?? 0) > 0;

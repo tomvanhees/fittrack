@@ -7,6 +7,8 @@ import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { initDatabase } from '@/db/schema';
+import { useAuthStore } from '@/store/authStore';
+import { useSyncStore } from '@/store/syncStore';
 import { colors } from '@/constants/colors';
 
 export default function RootLayout() {
@@ -21,6 +23,12 @@ export default function RootLayout() {
       setError(e instanceof Error ? e.message : 'Database-initialisatie mislukt');
     }
   }, []);
+
+  // Auth-sessie laden + op wijzigingen luisteren (no-op zonder Supabase-config).
+  useEffect(() => useAuthStore.getState().init(), []);
+
+  // Auto-sync: bij aanmelden en bij elke voorgrond-activatie.
+  useEffect(() => useSyncStore.getState().init(), []);
 
   if (error) {
     return (
@@ -50,6 +58,7 @@ export default function RootLayout() {
           }}
         >
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="library" options={{ title: 'Bibliotheek' }} />
           <Stack.Screen name="progress" options={{ title: 'Voortgang' }} />
           <Stack.Screen
             name="modals/add-exercise"
@@ -62,6 +71,10 @@ export default function RootLayout() {
           <Stack.Screen
             name="modals/exercise-detail"
             options={{ presentation: 'modal', title: 'Oefening' }}
+          />
+          <Stack.Screen
+            name="modals/auth"
+            options={{ presentation: 'modal', title: 'Account' }}
           />
         </Stack>
       </SafeAreaProvider>

@@ -5,6 +5,7 @@ import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { TemplateDayEditor } from '@/components/templates/TemplateDayEditor';
+import { KeyboardAvoider } from '@/components/shared/KeyboardAvoider';
 import {
   deleteTemplate,
   getOrCreateTemplateDay,
@@ -110,7 +111,12 @@ export default function EditTemplateModal() {
   }
 
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
+    <KeyboardAvoider style={styles.screen}>
+    <ScrollView
+      style={styles.screen}
+      contentContainerStyle={styles.content}
+      keyboardShouldPersistTaps="handled"
+    >
       <Text style={styles.fieldLabel}>Naam</Text>
       <TextInput
         value={name}
@@ -141,6 +147,7 @@ export default function EditTemplateModal() {
         <Text style={styles.deleteBtnText}>Template verwijderen</Text>
       </Pressable>
     </ScrollView>
+    </KeyboardAvoider>
   );
 }
 

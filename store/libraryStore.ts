@@ -5,6 +5,7 @@ import {
   addCustomExercise as dbAddCustom,
   deleteCustomExercise,
   getAllExercises,
+  updateExercise as dbUpdateExercise,
 } from '@/db/queries/exercises';
 import type { Category, Exercise } from '@/types';
 
@@ -15,6 +16,7 @@ interface LibraryStore {
 
   loadExercises: () => Promise<void>;
   addCustomExercise: (name: string, category: Category) => Promise<Exercise>;
+  updateCustomExercise: (id: number, name: string, category: Category) => Promise<void>;
   removeCustomExercise: (id: number) => Promise<boolean>;
   setSearch: (q: string) => void;
   setCategory: (cat: Category | 'all') => void;
@@ -36,6 +38,11 @@ export const useLibraryStore = create<LibraryStore>((set, get) => ({
     const created = dbAddCustom(name, category);
     set({ exercises: getAllExercises() });
     return created;
+  },
+
+  updateCustomExercise: async (id, name, category) => {
+    dbUpdateExercise(id, name, category);
+    set({ exercises: getAllExercises() });
   },
 
   removeCustomExercise: async (id) => {

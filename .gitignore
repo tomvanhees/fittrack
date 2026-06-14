@@ -30,7 +30,12 @@ yarn-error.*
 .idea/
 
 # Env
-.env*.local
+.env
+.env.*
+!.env.example
+
+# Secrets — Google Play service account voor `eas submit`
+google-service-account.json
 
 # Build
 ios/

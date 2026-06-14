@@ -21,7 +21,7 @@ function mapExercise(row: ExerciseRow): Exercise {
 
 export function getAllExercises(): Exercise[] {
   const rows = db.getAllSync<ExerciseRow>(
-    'SELECT id, name, category, is_custom FROM exercises ORDER BY name COLLATE NOCASE ASC'
+    'SELECT id, name, category, is_custom FROM exercises WHERE deleted = 0 ORDER BY name COLLATE NOCASE ASC'
   );
   return rows.map(mapExercise);
 }
@@ -36,7 +36,7 @@ export function getExerciseById(id: number): Exercise | null {
 
 export function getExercisesByCategory(category: Category): Exercise[] {
   const rows = db.getAllSync<ExerciseRow>(
-    'SELECT id, name, category, is_custom FROM exercises WHERE category = ? ORDER BY name COLLATE NOCASE ASC',
+    'SELECT id, name, category, is_custom FROM exercises WHERE category = ? AND deleted = 0 ORDER BY name COLLATE NOCASE ASC',
     [category]
   );
   return rows.map(mapExercise);
@@ -70,12 +70,13 @@ export function updateExercise(id: number, name: string, category: Category): vo
 export function deleteCustomExercise(id: number): boolean {
   const inUse = db.getFirstSync<{ count: number }>(
     `SELECT
-       (SELECT COUNT(*) FROM workout_exercises WHERE exercise_id = ?) +
-       (SELECT COUNT(*) FROM template_day_exercises WHERE exercise_id = ?) AS count`,
+       (SELECT COUNT(*) FROM workout_exercises WHERE exercise_id = ? AND deleted = 0) +
+       (SELECT COUNT(*) FROM template_day_exercises WHERE exercise_id = ? AND deleted = 0) AS count`,
     [id, id]
   );
   if (inUse && inUse.count > 0) return false;
 
-  db.runSync('DELETE FROM exercises WHERE id = ? AND is_custom = 1', [id]);
+  // Soft-delete (tombstone) zodat de verwijdering meesynchroniseert.
+  db.runSync('UPDATE exercises SET deleted = 1 WHERE id = ? AND is_custom = 1', [id]);
   return true;
 }

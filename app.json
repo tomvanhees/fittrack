@@ -11,7 +11,9 @@
       "bundleIdentifier": "be.tomvanhees.fittrack"
     },
     "android": {
-      "package": "be.tomvanhees.fittrack"
+      "package": "be.tomvanhees.fittrack",
+      "versionCode": 2,
+      "permissions": []
     },
     "web": {
       "bundler": "metro",
@@ -27,7 +29,8 @@
           "resizeMode": "contain",
           "backgroundColor": "#0B0F14"
         }
-      ]
+      ],
+      "expo-sharing"
     ],
     "experiments": {
       "typedRoutes": true

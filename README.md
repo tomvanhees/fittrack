@@ -67,7 +67,8 @@ De native mappen `android/` en `ios/` worden gegenereerd (CNG) en staan in
 
 ```
 app/                 Expo Router schermen
-  (tabs)/            Bottom-tab schermen: today, week, templates, library
+  (tabs)/            Bottom-tab schermen: today, week, templates, settings (Meer)
+  library.tsx        Oefeningenbibliotheek (stack-scherm, via Meer)
   modals/            add-exercise, edit-template, exercise-detail
   _layout.tsx        Root layout + DB-init
 components/          UI-componenten per domein (today / week / templates / shared)
@@ -94,10 +95,20 @@ Zie [`db/schema.ts`](db/schema.ts) voor het volledige schema.
 - **Week** — weeknavigatie met status per dag (workout / rust / afgerond), dag bewerken,
   template toepassen op de week.
 - **Templates** — herbruikbare weekschema's aanmaken/bewerken per weekdag.
-- **Bibliotheek** — oefeningen zoeken/filteren, eigen oefeningen toevoegen, detail met
-  recente sessies.
+- **Bibliotheek** — oefeningen zoeken/filteren, eigen oefeningen toevoegen én
+  bewerken, detail met recente sessies.
+- **Meer** — volledige data-export als JSON-back-up (met schema- + app-versie),
+  plus app-info. Hier landt later account & cloud-sync.
+
+## Migraties & versionering
+
+Het schema wordt versiegestuurd gemigreerd via `PRAGMA user_version`
+(`db/migrations.ts`, `SCHEMA_VERSION`). Elke syncbare tabel draagt sync-metadata
+(`uuid`, `updated_at`, `version`, `deleted`) die door triggers automatisch wordt
+bijgehouden — de local-first fundering voor cloud-sync.
 
 ## Toekomst
 
-Cloud sync via Supabase (zie technisch document, sectie 10). Offline-first blijft het
-uitgangspunt: de app werkt altijd lokaal, sync gebeurt op de achtergrond.
+Authenticatie + cloud-sync via Supabase: zie [`docs/SYNC_PLAN.md`](docs/SYNC_PLAN.md).
+Offline-first blijft het uitgangspunt: de app werkt altijd lokaal, sync gebeurt op
+de achtergrond. Play Store-release: zie [`docs/PLAY_STORE.md`](docs/PLAY_STORE.md).

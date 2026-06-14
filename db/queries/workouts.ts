@@ -119,7 +119,7 @@ export function reopenWorkout(date: string): void {
 
 export function getWorkoutExercises(workoutDayId: number): WorkoutExercise[] {
   const rows = db.getAllSync<WorkoutExerciseRow>(
-    'SELECT * FROM workout_exercises WHERE workout_day_id = ? ORDER BY sort_order ASC, id ASC',
+    'SELECT * FROM workout_exercises WHERE workout_day_id = ? AND deleted = 0 ORDER BY sort_order ASC, id ASC',
     [workoutDayId]
   );
   return rows.map(mapExercise);
@@ -144,15 +144,21 @@ export function addExerciseToDay(date: string, exerciseId: number): WorkoutExerc
 }
 
 export function removeWorkoutExercise(workoutExerciseId: number): void {
-  // ON DELETE CASCADE ruimt de bijbehorende sets op.
-  db.runSync('DELETE FROM workout_exercises WHERE id = ?', [workoutExerciseId]);
+  // Soft-delete: oefening + bijbehorende sets als tombstone (syncen mee).
+  db.withTransactionSync(() => {
+    db.runSync(
+      'UPDATE workout_sets SET deleted = 1 WHERE workout_exercise_id = ? AND deleted = 0',
+      [workoutExerciseId]
+    );
+    db.runSync('UPDATE workout_exercises SET deleted = 1 WHERE id = ?', [workoutExerciseId]);
+  });
 }
 
 // ---------- Sets ----------
 
 export function getSetsForWorkoutExercise(workoutExerciseId: number): WorkoutSet[] {
   const rows = db.getAllSync<WorkoutSetRow>(
-    'SELECT * FROM workout_sets WHERE workout_exercise_id = ? ORDER BY set_number ASC',
+    'SELECT * FROM workout_sets WHERE workout_exercise_id = ? AND deleted = 0 ORDER BY set_number ASC',
     [workoutExerciseId]
   );
   return rows.map(mapSet);
@@ -200,7 +206,7 @@ export function updateSet(
 }
 
 export function removeSet(setId: number): void {
-  db.runSync('DELETE FROM workout_sets WHERE id = ?', [setId]);
+  db.runSync('UPDATE workout_sets SET deleted = 1 WHERE id = ?', [setId]);
 }
 
 /**
@@ -219,8 +225,9 @@ export function upsertSet(
     [workoutExerciseId, setNumber]
   );
   if (existing) {
+    // deleted = 0 herstelt een eventueel hergebruikt tombstone-setnummer.
     db.runSync(
-      "UPDATE workout_sets SET weight = ?, reps = ?, completed_at = datetime('now') WHERE id = ?",
+      "UPDATE workout_sets SET weight = ?, reps = ?, deleted = 0, completed_at = datetime('now') WHERE id = ?",
       [weight, reps, existing.id]
     );
     return getSetById(existing.id)!;
@@ -235,7 +242,7 @@ export function upsertSet(
 /** Verwijdert een set op basis van (workoutExerciseId, setNumber), indien aanwezig. */
 export function removeSetByNumber(workoutExerciseId: number, setNumber: number): void {
   db.runSync(
-    'DELETE FROM workout_sets WHERE workout_exercise_id = ? AND set_number = ?',
+    'UPDATE workout_sets SET deleted = 1 WHERE workout_exercise_id = ? AND set_number = ?',
     [workoutExerciseId, setNumber]
   );
 }
@@ -253,7 +260,8 @@ export function getPreviousSets(exerciseId: number, beforeDate: string): Workout
        JOIN workout_days wd ON wd.id = we.workout_day_id
       WHERE we.exercise_id = ?
         AND wd.date < ?
-        AND EXISTS (SELECT 1 FROM workout_sets ws WHERE ws.workout_exercise_id = we.id)
+        AND we.deleted = 0
+        AND EXISTS (SELECT 1 FROM workout_sets ws WHERE ws.workout_exercise_id = we.id AND ws.deleted = 0)
       ORDER BY wd.date DESC
       LIMIT 1`,
     [exerciseId, beforeDate]
@@ -296,7 +304,7 @@ export function getExerciseNamesForDay(workoutDayId: number): string[] {
     `SELECT e.name AS name
        FROM workout_exercises we
        JOIN exercises e ON e.id = we.exercise_id
-      WHERE we.workout_day_id = ?
+      WHERE we.workout_day_id = ? AND we.deleted = 0
       ORDER BY we.sort_order ASC, we.id ASC`,
     [workoutDayId]
   );
@@ -316,7 +324,8 @@ export function getExerciseHistory(exerciseId: number, limit = 5): ExerciseSessi
        FROM workout_exercises we
        JOIN workout_days wd ON wd.id = we.workout_day_id
       WHERE we.exercise_id = ?
-        AND EXISTS (SELECT 1 FROM workout_sets ws WHERE ws.workout_exercise_id = we.id)
+        AND we.deleted = 0
+        AND EXISTS (SELECT 1 FROM workout_sets ws WHERE ws.workout_exercise_id = we.id AND ws.deleted = 0)
       ORDER BY wd.date DESC
       LIMIT ?`,
     [exerciseId, limit]

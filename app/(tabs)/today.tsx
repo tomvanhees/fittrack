@@ -7,6 +7,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ExerciseCard } from '@/components/today/ExerciseCard';
 import { EmptyState } from '@/components/shared/EmptyState';
+import { KeyboardAvoider } from '@/components/shared/KeyboardAvoider';
 import { useWorkoutStore } from '@/store/workoutStore';
 import { formatLongDate, todayISO } from '@/lib/date';
 import { colors, fontSize, radius, spacing } from '@/constants/colors';
@@ -83,9 +84,11 @@ export default function TodayScreen() {
         </Pressable>
       </View>
 
+      <KeyboardAvoider style={styles.flex}>
       <ScrollView
         contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
         {count === 0 ? (
           <EmptyState
@@ -118,6 +121,7 @@ export default function TodayScreen() {
           </Pressable>
         ) : null}
       </ScrollView>
+      </KeyboardAvoider>
 
       {!isCompleted && count > 0 ? (
         <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.sm }]}>
@@ -135,6 +139,9 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  flex: {
+    flex: 1,
   },
   header: {
     flexDirection: 'row',
