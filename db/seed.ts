@@ -45,6 +45,12 @@ export const DEFAULT_EXERCISES: SeedExercise[] = [
   { name: 'Overhead Tricep Extension', category: 'triceps' },
   { name: 'Close-Grip Bench Press', category: 'triceps' },
   { name: 'Tricep Dip', category: 'triceps' },
+  // Voorarmen
+  { name: 'Wrist Curl', category: 'voorarmen' },
+  { name: 'Reverse Wrist Curl', category: 'voorarmen' },
+  { name: 'Reverse Curl', category: 'voorarmen' },
+  { name: 'Farmer\'s Walk', category: 'voorarmen' },
+  { name: 'Wrist Roller', category: 'voorarmen' },
   // Benen
   { name: 'Squat', category: 'benen' },
   { name: 'Front Squat', category: 'benen' },

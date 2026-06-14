@@ -24,6 +24,7 @@ interface WorkoutExerciseRow {
   workout_day_id: number;
   exercise_id: number;
   sort_order: number;
+  planned_sets: number | null;
 }
 
 interface WorkoutSetRow {
@@ -51,6 +52,7 @@ function mapExercise(row: WorkoutExerciseRow): WorkoutExercise {
     workoutDayId: row.workout_day_id,
     exerciseId: row.exercise_id,
     order: row.sort_order,
+    plannedSets: row.planned_sets ?? undefined,
   };
 }
 
@@ -281,6 +283,7 @@ export function getWorkoutWithSets(date: string): ExerciseWithSets[] {
       exercise,
       previousSets: getPreviousSets(we.exerciseId, date),
       currentSets: getSetsForWorkoutExercise(we.id),
+      plannedSets: we.plannedSets,
     });
   }
 

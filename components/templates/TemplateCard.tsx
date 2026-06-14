@@ -3,7 +3,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { WEEKDAY_LABELS } from '@/constants/categories';
-import { colors, fontSize, radius, spacing } from '@/constants/colors';
+import { colors, fontSize, radius, shadow, spacing } from '@/constants/colors';
 import type { TemplateSummary } from '@/db/queries/templates';
 
 interface TemplateCardProps {
@@ -44,6 +44,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     padding: spacing.lg,
+    ...shadow,
     gap: spacing.xs,
   },
   name: {

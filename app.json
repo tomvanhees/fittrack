@@ -8,10 +8,10 @@
     "userInterfaceStyle": "dark",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "be.mobilevikings.fittrack"
+      "bundleIdentifier": "be.tomvanhees.fittrack"
     },
     "android": {
-      "package": "be.mobilevikings.fittrack"
+      "package": "be.tomvanhees.fittrack"
     },
     "web": {
       "bundler": "metro",

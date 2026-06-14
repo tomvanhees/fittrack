@@ -7,7 +7,7 @@ import { Swipeable } from 'react-native-gesture-handler';
 import { SetRow } from './SetRow';
 import { ProgressBadge } from './ProgressBadge';
 import { categoryColor } from '@/constants/categories';
-import { colors, fontSize, radius, spacing } from '@/constants/colors';
+import { colors, fontSize, radius, shadow, spacing } from '@/constants/colors';
 import type { ExerciseWithSets, WorkoutSet } from '@/types';
 
 if (
@@ -35,9 +35,9 @@ export function ExerciseCard({
   const [collapsed, setCollapsed] = useState(false);
   const [extraRows, setExtraRows] = useState(0);
 
-  const { exercise, previousSets, currentSets, workoutExerciseId } = data;
+  const { exercise, previousSets, currentSets, workoutExerciseId, plannedSets } = data;
 
-  const baseRows = Math.max(previousSets.length, currentSets.length, 1);
+  const baseRows = Math.max(previousSets.length, currentSets.length, plannedSets ?? 0, 1);
   const rowCount = baseRows + extraRows;
 
   const rows = useMemo(() => {
@@ -163,6 +163,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     padding: spacing.lg,
+    ...shadow,
   },
   header: {
     flexDirection: 'row',

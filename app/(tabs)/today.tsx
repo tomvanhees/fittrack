@@ -65,6 +65,13 @@ export default function TodayScreen() {
           </Text>
         </View>
         <Pressable
+          onPress={() => router.push('/progress')}
+          style={styles.iconChip}
+          hitSlop={8}
+        >
+          <Ionicons name="stats-chart-outline" size={20} color={colors.text} />
+        </Pressable>
+        <Pressable
           onPress={isCompleted ? reopenTodayWorkout : handleComplete}
           style={[styles.completeChip, isCompleted && styles.completeChipDone]}
         >
@@ -146,6 +153,16 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: fontSize.sm,
     marginTop: 2,
+  },
+  iconChip: {
+    width: 44,
+    height: 44,
+    borderRadius: radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   completeChip: {
     width: 44,

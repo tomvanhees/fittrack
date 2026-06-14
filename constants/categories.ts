@@ -14,6 +14,7 @@ export const CATEGORIES: CategoryMeta[] = [
   { key: 'schouders', label: 'Schouders', color: '#F59E0B' },
   { key: 'biceps', label: 'Biceps', color: '#8B5CF6' },
   { key: 'triceps', label: 'Triceps', color: '#EC4899' },
+  { key: 'voorarmen', label: 'Voorarmen', color: '#84CC16' },
   { key: 'benen', label: 'Benen', color: '#22C55E' },
   { key: 'core', label: 'Core', color: '#14B8A6' },
   { key: 'cardio', label: 'Cardio', color: '#F97316' },

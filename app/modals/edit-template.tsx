@@ -11,6 +11,7 @@ import {
   getTemplateWithDays,
   removeTemplateDayExercise,
   setTemplateDayLabel,
+  updateTemplateDayExerciseSets,
   updateTemplateName,
 } from '@/db/queries/templates';
 import { colors, fontSize, radius, spacing } from '@/constants/colors';
@@ -50,6 +51,11 @@ export default function EditTemplateModal() {
 
   function handleRemoveExercise(tdeId: number) {
     removeTemplateDayExercise(tdeId);
+    reload();
+  }
+
+  function handleChangeSets(tdeId: number, sets: number) {
+    updateTemplateDayExerciseSets(tdeId, sets);
     reload();
   }
 
@@ -121,6 +127,7 @@ export default function EditTemplateModal() {
         onSelectWeekday={setSelectedWeekday}
         onAddExercise={handleAddExercise}
         onRemoveExercise={handleRemoveExercise}
+        onChangeSets={handleChangeSets}
         onChangeLabel={handleChangeLabel}
       />
 

@@ -15,6 +15,7 @@ interface TemplateDayEditorProps {
   onSelectWeekday: (weekday: number) => void;
   onAddExercise: () => void;
   onRemoveExercise: (templateDayExerciseId: number) => void;
+  onChangeSets: (templateDayExerciseId: number, sets: number) => void;
   onChangeLabel: (label: string) => void;
 }
 
@@ -24,6 +25,7 @@ export function TemplateDayEditor({
   onSelectWeekday,
   onAddExercise,
   onRemoveExercise,
+  onChangeSets,
   onChangeLabel,
 }: TemplateDayEditorProps) {
   const day = template.days.find((d) => d.weekday === selectedWeekday);
@@ -73,6 +75,34 @@ export function TemplateDayEditor({
               <Text style={styles.itemName} numberOfLines={1}>
                 {ex.exercise.name}
               </Text>
+              <View style={styles.stepper}>
+                <Pressable
+                  onPress={() => onChangeSets(ex.id, ex.sets - 1)}
+                  hitSlop={6}
+                  style={styles.stepBtn}
+                  disabled={ex.sets <= 1}
+                >
+                  <Ionicons
+                    name="remove"
+                    size={16}
+                    color={ex.sets <= 1 ? colors.textFaint : colors.primary}
+                  />
+                </Pressable>
+                <Text style={styles.stepValue}>{ex.sets}</Text>
+                <Pressable
+                  onPress={() => onChangeSets(ex.id, ex.sets + 1)}
+                  hitSlop={6}
+                  style={styles.stepBtn}
+                  disabled={ex.sets >= 9}
+                >
+                  <Ionicons
+                    name="add"
+                    size={16}
+                    color={ex.sets >= 9 ? colors.textFaint : colors.primary}
+                  />
+                </Pressable>
+              </View>
+              <Text style={styles.setsLabel}>sets</Text>
               <Pressable onPress={() => onRemoveExercise(ex.id)} hitSlop={8}>
                 <Ionicons name="remove-circle-outline" size={20} color={colors.textMuted} />
               </Pressable>
@@ -168,6 +198,31 @@ const styles = StyleSheet.create({
     flex: 1,
     color: colors.text,
     fontSize: fontSize.md,
+  },
+  stepper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surfaceAlt,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  stepBtn: {
+    width: 28,
+    height: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepValue: {
+    minWidth: 18,
+    textAlign: 'center',
+    color: colors.text,
+    fontSize: fontSize.md,
+    fontWeight: '700',
+  },
+  setsLabel: {
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
   },
   addBtn: {
     flexDirection: 'row',

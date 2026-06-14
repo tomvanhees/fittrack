@@ -2,7 +2,7 @@
 
 export type Category =
   | 'borst' | 'rug' | 'schouders' | 'biceps'
-  | 'triceps' | 'benen' | 'core' | 'cardio' | 'custom';
+  | 'triceps' | 'voorarmen' | 'benen' | 'core' | 'cardio' | 'custom';
 
 export interface Exercise {
   id: number;
@@ -29,6 +29,7 @@ export interface TemplateDayExercise {
   templateDayId: number;
   exerciseId: number;
   order: number;
+  sets: number;             // geplande aantal sets bij toepassen
 }
 
 export interface WorkoutDay {
@@ -44,6 +45,7 @@ export interface WorkoutExercise {
   workoutDayId: number;
   exerciseId: number;
   order: number;
+  plannedSets?: number;     // overgenomen uit template; aantal voorgevulde rijen
 }
 
 export interface WorkoutSet {
@@ -61,6 +63,7 @@ export interface ExerciseWithSets {
   exercise: Exercise;
   previousSets: WorkoutSet[];   // Sets van vorige sessie
   currentSets: WorkoutSet[];    // Sets van vandaag (kan leeg zijn)
+  plannedSets?: number;         // Aantal voorgevulde rijen (uit template)
 }
 
 // Progressie-resultaat voor de ProgressBadge

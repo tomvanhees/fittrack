@@ -4,7 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { formatLongDate } from '@/lib/date';
-import { colors, fontSize, radius, spacing } from '@/constants/colors';
+import { colors, fontSize, radius, shadow, spacing } from '@/constants/colors';
 import type { WeekDayInfo } from '@/store/workoutStore';
 
 interface DayCardProps {
@@ -74,6 +74,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     padding: spacing.lg,
+    ...shadow,
   },
   header: {
     flexDirection: 'row',

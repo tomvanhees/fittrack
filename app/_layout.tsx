@@ -50,6 +50,7 @@ export default function RootLayout() {
           }}
         >
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="progress" options={{ title: 'Voortgang' }} />
           <Stack.Screen
             name="modals/add-exercise"
             options={{ presentation: 'modal', title: 'Oefening toevoegen' }}

@@ -1,6 +1,6 @@
 // db/queries/templates.ts
 
-import { db } from '../schema';
+import { db, DEFAULT_TEMPLATE_SETS } from '../schema';
 import { getExerciseById } from './exercises';
 import { getOrCreateWorkoutDay, getWorkoutExercises } from './workouts';
 import { weekDatesOf } from '@/lib/date';
@@ -32,6 +32,7 @@ interface TemplateDayExerciseRow {
   template_day_id: number;
   exercise_id: number;
   sort_order: number;
+  sets: number;
 }
 
 function mapTemplate(row: TemplateRow): WeekTemplate {
@@ -116,6 +117,7 @@ export function getTemplateWithDays(id: number): TemplateWithDays | null {
           templateDayId: er.template_day_id,
           exerciseId: er.exercise_id,
           order: er.sort_order,
+          sets: er.sets,
           exercise,
         } satisfies TemplateDayExercise & { exercise: typeof exercise };
       })
@@ -170,9 +172,21 @@ export function addTemplateDayExercise(
     [templateDayId]
   );
   db.runSync(
-    'INSERT INTO template_day_exercises (template_day_id, exercise_id, sort_order) VALUES (?, ?, ?)',
-    [templateDayId, exerciseId, next?.next ?? 0]
+    'INSERT INTO template_day_exercises (template_day_id, exercise_id, sort_order, sets) VALUES (?, ?, ?, ?)',
+    [templateDayId, exerciseId, next?.next ?? 0, DEFAULT_TEMPLATE_SETS]
   );
+}
+
+/** Werkt het geplande aantal sets van een template-oefening bij (1..9). */
+export function updateTemplateDayExerciseSets(
+  templateDayExerciseId: number,
+  sets: number
+): void {
+  const clamped = Math.max(1, Math.min(9, Math.round(sets)));
+  db.runSync('UPDATE template_day_exercises SET sets = ? WHERE id = ?', [
+    clamped,
+    templateDayExerciseId,
+  ]);
 }
 
 export function removeTemplateDayExercise(templateDayExerciseId: number): void {
@@ -212,11 +226,11 @@ export function applyTemplateToWeek(templateId: number, targetDate: string): voi
         day.id,
       ]);
 
-      // Kopieer oefeningen.
+      // Kopieer oefeningen, inclusief het geplande aantal sets.
       for (const ex of tDay.exercises) {
         db.runSync(
-          'INSERT INTO workout_exercises (workout_day_id, exercise_id, sort_order) VALUES (?, ?, ?)',
-          [day.id, ex.exerciseId, ex.order]
+          'INSERT INTO workout_exercises (workout_day_id, exercise_id, sort_order, planned_sets) VALUES (?, ?, ?, ?)',
+          [day.id, ex.exerciseId, ex.order, ex.sets]
         );
       }
     }
