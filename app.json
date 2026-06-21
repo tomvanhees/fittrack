@@ -12,7 +12,7 @@
     },
     "android": {
       "package": "be.tomvanhees.fittrack",
-      "versionCode": 3,
+      "versionCode": 4,
       "permissions": []
     },
     "web": {
