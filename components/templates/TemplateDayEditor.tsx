@@ -3,7 +3,8 @@
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { WEEKDAY_LABELS, WEEKDAY_LABELS_LONG } from '@/constants/categories';
-import { colors, fontSize, radius, spacing } from '@/constants/colors';
+import { useAccent } from '@/store/prefsStore';
+import { colors, fonts, fontSize, radius, spacing } from '@/constants/colors';
 import type { TemplateWithDays } from '@/types';
 
 // Weergavevolgorde: maandag..zondag, met DB-weekday-index erin.
@@ -28,6 +29,7 @@ export function TemplateDayEditor({
   onChangeSets,
   onChangeLabel,
 }: TemplateDayEditorProps) {
+  const { accent } = useAccent();
   const day = template.days.find((d) => d.weekday === selectedWeekday);
   const exercises = day?.exercises ?? [];
 
@@ -42,7 +44,10 @@ export function TemplateDayEditor({
             <Pressable
               key={wd}
               onPress={() => onSelectWeekday(wd)}
-              style={[styles.weekCell, isSelected && styles.weekCellSelected]}
+              style={[
+                styles.weekCell,
+                isSelected && { backgroundColor: accent, borderColor: accent },
+              ]}
             >
               <Text style={[styles.weekday, isSelected && styles.textSelected]}>
                 {WEEKDAY_LABELS[wd]}
@@ -56,7 +61,7 @@ export function TemplateDayEditor({
       </View>
 
       <View style={styles.dayHeader}>
-        <Ionicons name="calendar" size={16} color={colors.primary} />
+        <Ionicons name="calendar" size={16} color={accent} />
         <Text style={styles.dayTitle}>
           {WEEKDAY_LABELS_LONG[selectedWeekday]}
           {day?.label ? ` — ${day.label}` : ''}
@@ -85,7 +90,7 @@ export function TemplateDayEditor({
                   <Ionicons
                     name="remove"
                     size={16}
-                    color={ex.sets <= 1 ? colors.textFaint : colors.primary}
+                    color={ex.sets <= 1 ? colors.textFaint : accent}
                   />
                 </Pressable>
                 <Text style={styles.stepValue}>{ex.sets}</Text>
@@ -98,7 +103,7 @@ export function TemplateDayEditor({
                   <Ionicons
                     name="add"
                     size={16}
-                    color={ex.sets >= 9 ? colors.textFaint : colors.primary}
+                    color={ex.sets >= 9 ? colors.textFaint : accent}
                   />
                 </Pressable>
               </View>
@@ -112,8 +117,8 @@ export function TemplateDayEditor({
       )}
 
       <Pressable style={styles.addBtn} onPress={onAddExercise}>
-        <Ionicons name="add" size={18} color={colors.primary} />
-        <Text style={styles.addBtnText}>Oefening toevoegen</Text>
+        <Ionicons name="add" size={18} color={accent} />
+        <Text style={[styles.addBtnText, { color: accent }]}>Oefening toevoegen</Text>
       </Pressable>
 
       <Text style={styles.fieldLabel}>Dag label</Text>
@@ -146,14 +151,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
-  weekCellSelected: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
   weekday: {
     color: colors.textMuted,
     fontSize: fontSize.xs,
-    fontWeight: '700',
+    fontFamily: fonts.jakarta700,
   },
   weekState: {
     color: colors.textFaint,
@@ -237,9 +238,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceAlt,
   },
   addBtnText: {
-    color: colors.primary,
     fontSize: fontSize.sm,
-    fontWeight: '700',
+    fontFamily: fonts.jakarta700,
   },
   fieldLabel: {
     color: colors.textMuted,

@@ -178,6 +178,15 @@ export function getOrCreateTemplateDay(templateId: number, weekday: number): Tem
   };
 }
 
+/** Het label (bv. "Push") van een template-dag, indien aanwezig. */
+export function getTemplateDayLabel(templateDayId: number): string | undefined {
+  const row = db.getFirstSync<{ label: string | null }>(
+    'SELECT label FROM template_days WHERE id = ?',
+    [templateDayId]
+  );
+  return row?.label ?? undefined;
+}
+
 export function setTemplateDayLabel(templateDayId: number, label: string): void {
   const trimmed = label.trim();
   db.runSync('UPDATE template_days SET label = ? WHERE id = ?', [

@@ -2,20 +2,20 @@
 
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useAccent } from '@/store/prefsStore';
 import { colors } from '@/constants/colors';
 
 export default function TabsLayout() {
+  const { accent } = useAccent();
   return (
     <Tabs
       screenOptions={{
-        headerStyle: { backgroundColor: colors.background },
-        headerTitleStyle: { color: colors.text, fontWeight: '700' },
-        headerShadowVisible: false,
+        headerShown: false,
         tabBarStyle: {
           backgroundColor: colors.surface,
           borderTopColor: colors.border,
         },
-        tabBarActiveTintColor: colors.primary,
+        tabBarActiveTintColor: accent,
         tabBarInactiveTintColor: colors.textMuted,
       }}
     >

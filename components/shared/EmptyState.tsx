@@ -2,7 +2,7 @@
 
 import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, Text, View } from 'react-native';
-import { colors, fontSize, spacing } from '@/constants/colors';
+import { colors, fonts, fontSize, spacing } from '@/constants/colors';
 
 interface EmptyStateProps {
   icon?: keyof typeof Ionicons.glyphMap;
@@ -31,7 +31,7 @@ const styles = StyleSheet.create({
   title: {
     color: colors.text,
     fontSize: fontSize.lg,
-    fontWeight: '700',
+    fontFamily: fonts.jakarta700,
     marginTop: spacing.sm,
     textAlign: 'center',
   },

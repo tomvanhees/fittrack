@@ -4,7 +4,8 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { formatLongDate } from '@/lib/date';
-import { colors, fontSize, radius, shadow, spacing } from '@/constants/colors';
+import { useAccent } from '@/store/prefsStore';
+import { colors, fonts, fontSize, radius, shadow, spacing } from '@/constants/colors';
 import type { WeekDayInfo } from '@/store/workoutStore';
 
 interface DayCardProps {
@@ -15,10 +16,11 @@ interface DayCardProps {
 }
 
 export function DayCard({ day, onEdit, onApplyTemplate, onToggleRest }: DayCardProps) {
+  const { accent } = useAccent();
   return (
     <View style={styles.card}>
       <View style={styles.header}>
-        <Ionicons name="calendar" size={18} color={colors.primary} />
+        <Ionicons name="calendar" size={18} color={accent} />
         <Text style={styles.date}>{formatLongDate(day.date)}</Text>
         {day.isCompleted ? (
           <View style={styles.completedBadge}>
@@ -42,7 +44,7 @@ export function DayCard({ day, onEdit, onApplyTemplate, onToggleRest }: DayCardP
         <View style={styles.list}>
           {day.exerciseNames.map((name, i) => (
             <View key={`${name}-${i}`} style={styles.item}>
-              <View style={styles.bullet} />
+              <View style={[styles.bullet, { backgroundColor: accent }]} />
               <Text style={styles.itemText}>{name}</Text>
             </View>
           ))}
@@ -50,7 +52,7 @@ export function DayCard({ day, onEdit, onApplyTemplate, onToggleRest }: DayCardP
       )}
 
       <View style={styles.actions}>
-        <Pressable style={[styles.btn, styles.btnPrimary]} onPress={onEdit}>
+        <Pressable style={[styles.btn, { backgroundColor: accent }]} onPress={onEdit}>
           <Ionicons name="create-outline" size={16} color={colors.primaryText} />
           <Text style={styles.btnPrimaryText}>Bewerken</Text>
         </Pressable>
@@ -70,7 +72,7 @@ export function DayCard({ day, onEdit, onApplyTemplate, onToggleRest }: DayCardP
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.surface,
-    borderRadius: radius.lg,
+    borderRadius: radius.xl,
     borderWidth: 1,
     borderColor: colors.border,
     padding: spacing.lg,
@@ -85,7 +87,7 @@ const styles = StyleSheet.create({
     flex: 1,
     color: colors.text,
     fontSize: fontSize.lg,
-    fontWeight: '700',
+    fontFamily: fonts.jakarta700,
   },
   completedBadge: {
     flexDirection: 'row',
@@ -99,7 +101,7 @@ const styles = StyleSheet.create({
   completedText: {
     color: colors.success,
     fontSize: fontSize.xs,
-    fontWeight: '700',
+    fontFamily: fonts.jakarta700,
   },
   divider: {
     height: 1,
@@ -139,13 +141,10 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     flex: 1,
   },
-  btnPrimary: {
-    backgroundColor: colors.primary,
-  },
   btnPrimaryText: {
     color: colors.primaryText,
     fontSize: fontSize.sm,
-    fontWeight: '700',
+    fontFamily: fonts.jakarta700,
   },
   btnSecondary: {
     backgroundColor: colors.surfaceAlt,
@@ -155,6 +154,6 @@ const styles = StyleSheet.create({
   btnSecondaryText: {
     color: colors.text,
     fontSize: fontSize.sm,
-    fontWeight: '700',
+    fontFamily: fonts.jakarta700,
   },
 });

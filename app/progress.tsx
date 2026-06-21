@@ -17,10 +17,12 @@ import { BarChart } from '@/components/progress/BarChart';
 import { LineChart } from '@/components/progress/LineChart';
 import { CategoryBars } from '@/components/progress/CategoryBars';
 import { StatCard } from '@/components/progress/StatCard';
+import { ScreenHeader } from '@/components/shared/ScreenHeader';
 import { GoalRing } from '@/components/goals/GoalRing';
 import { goalDisplay } from '@/components/goals/goalDisplay';
 import { EmptyState } from '@/components/shared/EmptyState';
-import { colors, fontSize, radius, spacing } from '@/constants/colors';
+import { useAccent } from '@/store/prefsStore';
+import { colors, fonts, fontSize, radius, spacing } from '@/constants/colors';
 import {
   getStrengthProgression,
   getTrackedExercises,
@@ -59,6 +61,7 @@ interface StatsData {
 
 export default function ProgressScreen() {
   const insets = useSafeAreaInsets();
+  const { accent, partner } = useAccent();
   const { width } = useWindowDimensions();
   const chartWidth = width - spacing.lg * 2 - spacing.lg * 2;
 
@@ -138,14 +141,15 @@ export default function ProgressScreen() {
   const selectedExercise = data?.exercises.find((e) => e.id === exerciseId);
 
   return (
-    <ScrollView
-      style={styles.screen}
-      contentContainerStyle={[
-        styles.content,
-        { paddingBottom: insets.bottom + spacing.xl },
-      ]}
-      showsVerticalScrollIndicator={false}
-    >
+    <View style={styles.screen}>
+      <ScreenHeader kicker="Statistieken" title="Voortgang" accent={accent} onBack={() => router.back()} />
+      <ScrollView
+        contentContainerStyle={[
+          styles.content,
+          { paddingBottom: insets.bottom + spacing.xl },
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
       {/* Maand / Jaar toggle */}
       <View style={styles.segment}>
         {(['month', 'year'] as Granularity[]).map((g) => {
@@ -153,7 +157,7 @@ export default function ProgressScreen() {
           return (
             <Pressable
               key={g}
-              style={[styles.segmentItem, active && styles.segmentItemActive]}
+              style={[styles.segmentItem, active && { backgroundColor: accent }]}
               onPress={() => changeGranularity(g)}
             >
               <Text style={[styles.segmentText, active && styles.segmentTextActive]}>
@@ -182,6 +186,7 @@ export default function ProgressScreen() {
                   centerLabel={d.centerLabel}
                   deltaLabel={d.deltaLabel}
                   reached={p.reached}
+                  color={accent}
                 />
               );
             })}
@@ -189,7 +194,7 @@ export default function ProgressScreen() {
         </StatCard>
       ) : (
         <Pressable style={styles.goalTeaser} onPress={() => router.push('/goals')}>
-          <Ionicons name="flag-outline" size={18} color={colors.primary} />
+          <Ionicons name="flag-outline" size={18} color={accent} />
           <Text style={styles.goalTeaserText}>Stel een doel in</Text>
           <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
         </Pressable>
@@ -212,7 +217,7 @@ export default function ProgressScreen() {
             <BarChart
               data={data.consistency}
               width={chartWidth}
-              color={colors.primary}
+              color={accent}
             />
           </StatCard>
 
@@ -249,7 +254,10 @@ export default function ProgressScreen() {
                     return (
                       <Pressable
                         key={e.id}
-                        style={[styles.chip, active && styles.chipActive]}
+                        style={[
+                          styles.chip,
+                          active && { backgroundColor: `${accent}22`, borderColor: accent },
+                        ]}
                         onPress={() => setExerciseId(e.id)}
                       >
                         <Text
@@ -271,6 +279,8 @@ export default function ProgressScreen() {
                     points={strength}
                     width={chartWidth}
                     unit="kg"
+                    color={accent}
+                    targetColor={partner}
                     targetValue={strengthTarget ?? undefined}
                   />
                 )}
@@ -291,7 +301,8 @@ export default function ProgressScreen() {
           </StatCard>
         </>
       )}
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
@@ -301,7 +312,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   content: {
-    padding: spacing.lg,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.lg,
     gap: spacing.lg,
   },
   segment: {
@@ -318,13 +331,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: radius.pill,
   },
-  segmentItemActive: {
-    backgroundColor: colors.primary,
-  },
   segmentText: {
     color: colors.textMuted,
     fontSize: fontSize.md,
-    fontWeight: '700',
+    fontFamily: fonts.jakarta700,
   },
   segmentTextActive: {
     color: colors.primaryText,
@@ -342,14 +352,10 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     maxWidth: 160,
   },
-  chipActive: {
-    backgroundColor: `${colors.primary}22`,
-    borderColor: colors.primary,
-  },
   chipText: {
     color: colors.textMuted,
     fontSize: fontSize.sm,
-    fontWeight: '600',
+    fontFamily: fonts.jakarta600,
   },
   chipTextActive: {
     color: colors.text,

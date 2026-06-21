@@ -4,7 +4,6 @@
 
 import { useState } from 'react';
 import {
-  ActivityIndicator,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -13,13 +12,17 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { KeyboardAvoider } from '@/components/shared/KeyboardAvoider';
+import { ScreenHeader } from '@/components/shared/ScreenHeader';
+import { SolidButton } from '@/components/shared/Button';
 import { useAuthStore } from '@/store/authStore';
+import { useAccent } from '@/store/prefsStore';
 import { colors, fontSize, radius, spacing } from '@/constants/colors';
 
 type Mode = 'signin' | 'signup';
 
 export default function AuthModal() {
   const { signIn, signUp } = useAuthStore();
+  const { accent } = useAccent();
 
   const [mode, setMode] = useState<Mode>('signin');
   const [email, setEmail] = useState('');
@@ -57,13 +60,17 @@ export default function AuthModal() {
 
   return (
     <KeyboardAvoider style={styles.screen} behavior="padding">
+      <ScreenHeader
+        kicker="Account"
+        title={mode === 'signin' ? 'Aanmelden' : 'Registreren'}
+        accent={accent}
+        onBack={() => router.back()}
+        backIcon="close"
+      />
       <ScrollView
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
       >
-        <Text style={styles.title}>
-          {mode === 'signin' ? 'Aanmelden' : 'Account aanmaken'}
-        </Text>
         <Text style={styles.subtitle}>
           Meld je aan om je workouts in de cloud te bewaren en te synchroniseren.
         </Text>
@@ -92,21 +99,16 @@ export default function AuthModal() {
         />
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
-        {info ? <Text style={styles.info}>{info}</Text> : null}
+        {info ? <Text style={[styles.info, { color: accent }]}>{info}</Text> : null}
 
-        <Pressable
-          style={[styles.submit, !canSubmit && styles.submitDisabled]}
+        <SolidButton
+          label={mode === 'signin' ? 'Aanmelden' : 'Registreren'}
+          accent={accent}
           onPress={handleSubmit}
           disabled={!canSubmit}
-        >
-          {submitting ? (
-            <ActivityIndicator color={colors.primaryText} />
-          ) : (
-            <Text style={styles.submitText}>
-              {mode === 'signin' ? 'Aanmelden' : 'Registreren'}
-            </Text>
-          )}
-        </Pressable>
+          loading={submitting}
+          style={styles.submit}
+        />
 
         <Pressable
           style={styles.toggle}
@@ -116,7 +118,7 @@ export default function AuthModal() {
             setInfo(null);
           }}
         >
-          <Text style={styles.toggleText}>
+          <Text style={[styles.toggleText, { color: accent }]}>
             {mode === 'signin'
               ? 'Nog geen account? Registreren'
               : 'Al een account? Aanmelden'}
@@ -134,13 +136,8 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: spacing.lg,
+    paddingTop: spacing.sm,
     gap: spacing.sm,
-  },
-  title: {
-    color: colors.text,
-    fontSize: fontSize.xl,
-    fontWeight: '800',
-    marginTop: spacing.sm,
   },
   subtitle: {
     color: colors.textMuted,
@@ -174,19 +171,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
   },
   submit: {
-    backgroundColor: colors.primary,
-    borderRadius: radius.md,
-    paddingVertical: spacing.md,
-    alignItems: 'center',
     marginTop: spacing.lg,
-  },
-  submitDisabled: {
-    opacity: 0.4,
-  },
-  submitText: {
-    color: colors.primaryText,
-    fontSize: fontSize.md,
-    fontWeight: '700',
   },
   toggle: {
     alignItems: 'center',

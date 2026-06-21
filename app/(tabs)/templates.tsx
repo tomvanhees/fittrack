@@ -1,23 +1,26 @@
 // app/(tabs)/templates.tsx
 
 import { useCallback, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TemplateCard } from '@/components/templates/TemplateCard';
 import { EmptyState } from '@/components/shared/EmptyState';
+import { ScreenHeader } from '@/components/shared/ScreenHeader';
+import { GhostButton } from '@/components/shared/Button';
 import {
   createTemplate,
   getAllTemplates,
   type TemplateSummary,
 } from '@/db/queries/templates';
 import { useWorkoutStore } from '@/store/workoutStore';
+import { useAccent } from '@/store/prefsStore';
 import { todayISO } from '@/lib/date';
-import { colors, fontSize, radius, spacing } from '@/constants/colors';
+import { colors, spacing } from '@/constants/colors';
 
 export default function TemplatesScreen() {
   const insets = useSafeAreaInsets();
+  const { accent } = useAccent();
   const [templates, setTemplates] = useState<TemplateSummary[]>([]);
   const applyTemplate = useWorkoutStore((s) => s.applyTemplate);
 
@@ -47,6 +50,7 @@ export default function TemplatesScreen() {
 
   return (
     <View style={styles.screen}>
+      <ScreenHeader kicker="Schema's" title="Templates" accent={accent} />
       <ScrollView
         contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + spacing.xl }]}
         showsVerticalScrollIndicator={false}
@@ -70,10 +74,7 @@ export default function TemplatesScreen() {
           ))
         )}
 
-        <Pressable style={styles.newBtn} onPress={handleNew}>
-          <Ionicons name="add" size={20} color={colors.primary} />
-          <Text style={styles.newBtnText}>Nieuwe template</Text>
-        </Pressable>
+        <GhostButton label="Nieuwe template" accent={accent} onPress={handleNew} />
       </ScrollView>
     </View>
   );
@@ -86,24 +87,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: spacing.lg,
-    paddingTop: spacing.xl + spacing.lg,
+    paddingTop: spacing.md,
     gap: spacing.md,
-  },
-  newBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.xs,
-    paddingVertical: spacing.md,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderStyle: 'dashed',
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-  },
-  newBtnText: {
-    color: colors.primary,
-    fontSize: fontSize.md,
-    fontWeight: '700',
   },
 });

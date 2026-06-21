@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import { View } from 'react-native';
 import Svg, { Line, Rect, Text as SvgText } from 'react-native-svg';
-import { colors, fontSize } from '@/constants/colors';
+import { colors, fonts, fontSize } from '@/constants/colors';
 import type { PeriodValue } from '@/lib/stats';
 
 interface BarChartProps {
@@ -79,7 +79,7 @@ export function BarChart({
               y={TOP_PAD - 10}
               fill={colors.text}
               fontSize={fontSize.sm}
-              fontWeight="700"
+              fontFamily={fonts.grotesk700}
               textAnchor="middle"
             >
               {formatValue(d.value)}

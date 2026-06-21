@@ -99,6 +99,15 @@ export function formatVolumeFull(kg: number): string {
   return `${formatNumberNL(kg)} kg`;
 }
 
+/** Compacte volumeweergave voor stat-tegels, bv. 1200 → "1,2t", 850 → "850kg". */
+export function formatVolumeCompact(kg: number): string {
+  if (kg >= 1000) {
+    const t = kg / 1000;
+    return `${t.toFixed(t >= 10 ? 0 : 1).replace('.', ',')}t`;
+  }
+  return `${Math.round(kg)}kg`;
+}
+
 /** Som van de waarden. */
 export function sumValues(values: number[]): number {
   return values.reduce((a, b) => a + b, 0);

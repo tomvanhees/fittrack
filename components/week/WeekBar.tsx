@@ -4,7 +4,8 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { WEEKDAY_LABELS } from '@/constants/categories';
 import { fromISODate } from '@/lib/date';
-import { colors, fontSize, radius, spacing } from '@/constants/colors';
+import { useAccent } from '@/store/prefsStore';
+import { colors, fonts, fontSize, radius, spacing } from '@/constants/colors';
 import type { WeekDayInfo } from '@/store/workoutStore';
 
 interface WeekBarProps {
@@ -17,10 +18,13 @@ interface WeekBarProps {
   onNextWeek: () => void;
 }
 
-function statusIcon(d: WeekDayInfo): { name: keyof typeof Ionicons.glyphMap; color: string } {
+function statusIcon(
+  d: WeekDayInfo,
+  accent: string
+): { name: keyof typeof Ionicons.glyphMap; color: string } {
   if (d.isCompleted) return { name: 'checkmark-circle', color: colors.success };
   if (d.isRestDay || !d.hasWorkout) return { name: 'moon', color: colors.rest };
-  return { name: 'barbell', color: colors.primary };
+  return { name: 'barbell', color: accent };
 }
 
 export function WeekBar({
@@ -32,6 +36,7 @@ export function WeekBar({
   onPrevWeek,
   onNextWeek,
 }: WeekBarProps) {
+  const { accent } = useAccent();
   return (
     <View style={styles.container}>
       <View style={styles.nav}>
@@ -48,20 +53,23 @@ export function WeekBar({
         {weekDays.map((d) => {
           const isSelected = d.date === selectedDate;
           const isToday = d.date === todayDate;
-          const icon = statusIcon(d);
+          const icon = statusIcon(d, accent);
           const dayNum = fromISODate(d.date).getDate();
           return (
             <Pressable
               key={d.date}
               onPress={() => onSelectDate(d.date)}
-              style={[styles.day, isSelected && styles.daySelected]}
+              style={[
+                styles.day,
+                isSelected && { backgroundColor: accent, borderColor: accent },
+              ]}
             >
               <Text style={[styles.weekday, isSelected && styles.textSelected]}>
                 {WEEKDAY_LABELS[d.weekday]}
               </Text>
               <Text style={[styles.dayNum, isSelected && styles.textSelected]}>{dayNum}</Text>
               <Ionicons name={icon.name} size={15} color={isSelected ? colors.primaryText : icon.color} />
-              <View style={[styles.todayDot, isToday ? styles.todayDotOn : undefined]} />
+              <View style={[styles.todayDot, isToday && { backgroundColor: accent }]} />
             </Pressable>
           );
         })}
@@ -85,7 +93,7 @@ const styles = StyleSheet.create({
   weekLabel: {
     color: colors.text,
     fontSize: fontSize.lg,
-    fontWeight: '700',
+    fontFamily: fonts.jakarta700,
   },
   days: {
     flexDirection: 'row',
@@ -102,19 +110,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
-  daySelected: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
   weekday: {
     color: colors.textMuted,
     fontSize: fontSize.xs,
-    fontWeight: '600',
+    fontFamily: fonts.jakarta600,
   },
   dayNum: {
     color: colors.text,
     fontSize: fontSize.md,
-    fontWeight: '700',
+    fontFamily: fonts.grotesk700,
   },
   textSelected: {
     color: colors.primaryText,
@@ -124,8 +128,5 @@ const styles = StyleSheet.create({
     height: 5,
     borderRadius: 3,
     backgroundColor: 'transparent',
-  },
-  todayDotOn: {
-    backgroundColor: colors.new,
   },
 });

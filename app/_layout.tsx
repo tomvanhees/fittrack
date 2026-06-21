@@ -6,6 +6,18 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import {
+  useFonts,
+  PlusJakartaSans_500Medium,
+  PlusJakartaSans_600SemiBold,
+  PlusJakartaSans_700Bold,
+  PlusJakartaSans_800ExtraBold,
+} from '@expo-google-fonts/plus-jakarta-sans';
+import {
+  SpaceGrotesk_500Medium,
+  SpaceGrotesk_600SemiBold,
+  SpaceGrotesk_700Bold,
+} from '@expo-google-fonts/space-grotesk';
 import { initDatabase } from '@/db/schema';
 import { useAuthStore } from '@/store/authStore';
 import { useSyncStore } from '@/store/syncStore';
@@ -14,6 +26,16 @@ import { colors } from '@/constants/colors';
 export default function RootLayout() {
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const [fontsLoaded] = useFonts({
+    PlusJakartaSans_500Medium,
+    PlusJakartaSans_600SemiBold,
+    PlusJakartaSans_700Bold,
+    PlusJakartaSans_800ExtraBold,
+    SpaceGrotesk_500Medium,
+    SpaceGrotesk_600SemiBold,
+    SpaceGrotesk_700Bold,
+  });
 
   useEffect(() => {
     try {
@@ -38,7 +60,7 @@ export default function RootLayout() {
     );
   }
 
-  if (!ready) {
+  if (!ready || !fontsLoaded) {
     return (
       <View style={styles.loading}>
         <ActivityIndicator color={colors.primary} size="large" />
@@ -52,35 +74,19 @@ export default function RootLayout() {
         <StatusBar style="light" />
         <Stack
           screenOptions={{
-            headerStyle: { backgroundColor: colors.background },
-            headerTintColor: colors.text,
+            headerShown: false,
             contentStyle: { backgroundColor: colors.background },
           }}
         >
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="library" options={{ title: 'Bibliotheek' }} />
-          <Stack.Screen name="progress" options={{ title: 'Voortgang' }} />
-          <Stack.Screen name="goals" options={{ title: 'Doelen' }} />
-          <Stack.Screen
-            name="modals/add-exercise"
-            options={{ presentation: 'modal', title: 'Oefening toevoegen' }}
-          />
-          <Stack.Screen
-            name="modals/edit-template"
-            options={{ presentation: 'modal', title: 'Template' }}
-          />
-          <Stack.Screen
-            name="modals/exercise-detail"
-            options={{ presentation: 'modal', title: 'Oefening' }}
-          />
-          <Stack.Screen
-            name="modals/auth"
-            options={{ presentation: 'modal', title: 'Account' }}
-          />
-          <Stack.Screen
-            name="modals/goal-edit"
-            options={{ presentation: 'modal', title: 'Doel' }}
-          />
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="library" />
+          <Stack.Screen name="progress" />
+          <Stack.Screen name="goals" />
+          <Stack.Screen name="modals/add-exercise" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="modals/edit-template" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="modals/exercise-detail" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="modals/auth" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="modals/goal-edit" options={{ presentation: 'modal' }} />
         </Stack>
       </SafeAreaProvider>
     </GestureHandlerRootView>

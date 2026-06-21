@@ -3,7 +3,7 @@
 
 import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Line, Polyline, Text as SvgText } from 'react-native-svg';
-import { colors, fontSize, spacing } from '@/constants/colors';
+import { colors, fonts, fontSize, spacing } from '@/constants/colors';
 
 export interface LinePoint {
   date: string; // ISO datum
@@ -18,6 +18,8 @@ interface LineChartProps {
   unit?: string; // bv. "kg"
   /** Optionele doelwaarde — tekent een gestreepte streeflijn over de grafiek. */
   targetValue?: number;
+  /** Kleur van de streeflijn (default: secondary / accent-partner). */
+  targetColor?: string;
 }
 
 const PAD_TOP = 18;
@@ -37,6 +39,7 @@ export function LineChart({
   color = colors.primary,
   unit = 'kg',
   targetValue,
+  targetColor = colors.secondary,
 }: LineChartProps) {
   if (points.length === 0) return null;
 
@@ -76,16 +79,16 @@ export function LineChart({
               y1={yFor(targetValue)}
               x2={width}
               y2={yFor(targetValue)}
-              stroke={colors.secondary}
+              stroke={targetColor}
               strokeWidth={1.5}
               strokeDasharray="5 4"
             />
             <SvgText
               x={width - PAD_X}
               y={Math.max(yFor(targetValue) - 4, 9)}
-              fill={colors.secondary}
+              fill={targetColor}
               fontSize={9}
-              fontWeight="700"
+              fontFamily={fonts.grotesk700}
               textAnchor="end"
             >
               {`Doel ${Math.round(targetValue)}`}
@@ -119,7 +122,7 @@ export function LineChart({
           y={Math.max(yFor(points[lastIdx].value) - 8, 12)}
           fill={colors.text}
           fontSize={fontSize.sm}
-          fontWeight="700"
+          fontFamily={fonts.grotesk700}
           textAnchor="middle"
         >
           {`${Math.round(points[lastIdx].value)}`}

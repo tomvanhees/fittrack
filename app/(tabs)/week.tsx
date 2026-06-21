@@ -8,13 +8,16 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WeekBar } from '@/components/week/WeekBar';
 import { DayCard } from '@/components/week/DayCard';
 import { EmptyState } from '@/components/shared/EmptyState';
+import { ScreenHeader } from '@/components/shared/ScreenHeader';
 import { useWorkoutStore } from '@/store/workoutStore';
+import { useAccent } from '@/store/prefsStore';
 import { getAllTemplates, type TemplateSummary } from '@/db/queries/templates';
 import { addDays, formatWeekLabel } from '@/lib/date';
 import { colors, fontSize, radius, spacing } from '@/constants/colors';
 
 export default function WeekScreen() {
   const insets = useSafeAreaInsets();
+  const { accent } = useAccent();
   const { weekDays, selectedDate, todayDate, setSelectedDate, loadWeek, setDateAsRest, applyTemplate } =
     useWorkoutStore();
 
@@ -53,6 +56,7 @@ export default function WeekScreen() {
 
   return (
     <View style={styles.screen}>
+      <ScreenHeader kicker="Planning" title="Week" accent={accent} />
       <ScrollView
         contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + spacing.xl }]}
         showsVerticalScrollIndicator={false}
@@ -126,7 +130,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: spacing.lg,
-    paddingTop: spacing.xl + spacing.lg,
+    paddingTop: spacing.md,
     gap: spacing.lg,
   },
   backdrop: {

@@ -1,23 +1,52 @@
 // app/(tabs)/today.tsx
 
-import { useCallback } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { useCallback, useMemo, useState } from 'react';
+import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
+import { ScreenHeader } from '@/components/shared/ScreenHeader';
+import { StatTiles } from '@/components/shared/StatTiles';
+import { GhostButton, GradientButton, IconButton } from '@/components/shared/Button';
 import { ExerciseCard } from '@/components/today/ExerciseCard';
+import { RestTimerBar } from '@/components/today/RestTimerBar';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { KeyboardAvoider } from '@/components/shared/KeyboardAvoider';
 import { useWorkoutStore } from '@/store/workoutStore';
-import { formatLongDate, todayISO } from '@/lib/date';
-import { colors, fontSize, radius, spacing } from '@/constants/colors';
+import { useAccent } from '@/store/prefsStore';
+import { todayISO, formatLongDate } from '@/lib/date';
+import { formatVolumeCompact } from '@/lib/stats';
+import { colors } from '@/constants/colors';
+import type { ExerciseWithSets } from '@/types';
+
+function summarize(exercises: ExerciseWithSets[]): { done: number; total: number; volume: number } {
+  let done = 0;
+  let total = 0;
+  let volume = 0;
+  for (const ex of exercises) {
+    const rows = Math.max(ex.previousSets.length, ex.currentSets.length, ex.plannedSets ?? 0, 1);
+    total += rows;
+    for (const s of ex.currentSets) {
+      if (s.weight > 0 && s.reps > 0) {
+        done += 1;
+        volume += s.weight * s.reps;
+      }
+    }
+  }
+  return { done, total, volume };
+}
 
 export default function TodayScreen() {
   const insets = useSafeAreaInsets();
+  const { accent, partner } = useAccent();
+  // Hoogte van de zwevende footer (timer + CTA) zodat we de scroll-inhoud
+  // genoeg onderaan padden — anders verdwijnt "Oefening toevoegen" erachter.
+  const [footerHeight, setFooterHeight] = useState(0);
   const {
     todayDate,
     todayExercises,
     todayCompletedAt,
+    todaySessionLabel,
     loadToday,
     saveSet,
     removeSet,
@@ -35,6 +64,7 @@ export default function TodayScreen() {
 
   const isCompleted = !!todayCompletedAt;
   const count = todayExercises.length;
+  const { done, total, volume } = useMemo(() => summarize(todayExercises), [todayExercises]);
 
   function handleComplete() {
     if (count === 0) {
@@ -57,78 +87,84 @@ export default function TodayScreen() {
 
   return (
     <View style={styles.screen}>
-      <View style={styles.header}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.date}>{formatLongDate(todayDate)}</Text>
-          <Text style={styles.subtitle}>
-            {count} {count === 1 ? 'oefening' : 'oefeningen'}
-            {isCompleted ? ' • afgerond' : ''}
-          </Text>
-        </View>
-        <Pressable
-          onPress={() => router.push('/progress')}
-          style={styles.iconChip}
-          hitSlop={8}
-        >
-          <Ionicons name="stats-chart-outline" size={20} color={colors.text} />
-        </Pressable>
-        <Pressable
-          onPress={isCompleted ? reopenTodayWorkout : handleComplete}
-          style={[styles.completeChip, isCompleted && styles.completeChipDone]}
-        >
-          <Ionicons
-            name={isCompleted ? 'checkmark-done' : 'checkmark'}
-            size={18}
-            color={isCompleted ? colors.success : colors.primaryText}
-          />
-        </Pressable>
-      </View>
-
       <KeyboardAvoider style={styles.flex}>
-      <ScrollView
-        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 100 }]}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-      >
-        {count === 0 ? (
-          <EmptyState
-            icon="barbell-outline"
-            title="Niets gepland vandaag"
-            subtitle="Voeg een oefening toe om te beginnen met loggen."
+        <ScrollView
+          contentContainerStyle={{ paddingBottom: (count > 0 ? footerHeight : insets.bottom) + 24 }}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <ScreenHeader
+            kicker={`Vandaag${todaySessionLabel ? ` · ${todaySessionLabel}` : ''}`}
+            title={formatLongDate(todayDate)}
+            accent={accent}
+            right={<IconButton icon="stats-chart" onPress={() => router.push('/progress')} color={colors.text} />}
           />
-        ) : (
-          todayExercises.map((data) => (
-            <ExerciseCard
-              key={data.workoutExerciseId}
-              data={data}
-              editable={!isCompleted}
-              onSaveSet={saveSet}
-              onRemoveSet={removeSet}
-              onRemoveExercise={handleRemoveExercise}
-            />
-          ))
-        )}
 
-        {!isCompleted ? (
-          <Pressable
-            style={styles.addExercise}
-            onPress={() =>
-              router.push({ pathname: '/modals/add-exercise', params: { date: todayDate } })
-            }
-          >
-            <Ionicons name="add" size={20} color={colors.primary} />
-            <Text style={styles.addExerciseText}>Oefening toevoegen</Text>
-          </Pressable>
-        ) : null}
-      </ScrollView>
+          {count > 0 ? (
+            <View style={styles.tiles}>
+              <StatTiles
+                accent={accent}
+                tiles={[
+                  { value: `${done}/${total}`, label: 'sets', accent: true },
+                  { value: formatVolumeCompact(volume), label: 'volume' },
+                ]}
+              />
+            </View>
+          ) : null}
+
+          <View style={styles.list}>
+            {count === 0 ? (
+              <EmptyState
+                icon="barbell-outline"
+                title="Niets gepland vandaag"
+                subtitle="Voeg een oefening toe om te beginnen met loggen."
+              />
+            ) : (
+              todayExercises.map((data, i) => (
+                <ExerciseCard
+                  key={data.workoutExerciseId}
+                  data={data}
+                  editable={!isCompleted}
+                  accent={accent}
+                  defaultExpanded={i === 0}
+                  onSaveSet={saveSet}
+                  onRemoveSet={removeSet}
+                  onRemoveExercise={handleRemoveExercise}
+                />
+              ))
+            )}
+
+            {!isCompleted ? (
+              <GhostButton
+                label="Oefening toevoegen"
+                accent={accent}
+                onPress={() =>
+                  router.push({ pathname: '/modals/add-exercise', params: { date: todayDate } })
+                }
+              />
+            ) : null}
+          </View>
+        </ScrollView>
       </KeyboardAvoider>
 
-      {!isCompleted && count > 0 ? (
-        <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.sm }]}>
-          <Pressable style={styles.completeBtn} onPress={handleComplete}>
-            <Ionicons name="checkmark-circle" size={20} color={colors.primaryText} />
-            <Text style={styles.completeBtnText}>Workout afronden</Text>
-          </Pressable>
+      {count > 0 ? (
+        <View
+          style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}
+          onLayout={(e) => setFooterHeight(e.nativeEvent.layout.height)}
+        >
+          <LinearGradient
+            colors={['rgba(19,18,17,0)', colors.background]}
+            style={styles.footerFade}
+            pointerEvents="none"
+          />
+          <RestTimerBar accent={accent} />
+          <GradientButton
+            label={isCompleted ? 'Afgerond — sterk werk!' : 'Workout afronden'}
+            icon={isCompleted ? 'checkmark-circle' : 'flash'}
+            accent={accent}
+            partner={partner}
+            onPress={isCompleted ? reopenTodayWorkout : handleComplete}
+          />
         </View>
       ) : null}
     </View>
@@ -143,89 +179,29 @@ const styles = StyleSheet.create({
   flex: {
     flex: 1,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.xl + spacing.lg,
-    paddingBottom: spacing.md,
-    gap: spacing.md,
+  tiles: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
   },
-  date: {
-    color: colors.text,
-    fontSize: fontSize.xl,
-    fontWeight: '800',
-  },
-  subtitle: {
-    color: colors.textMuted,
-    fontSize: fontSize.sm,
-    marginTop: 2,
-  },
-  iconChip: {
-    width: 44,
-    height: 44,
-    borderRadius: radius.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  completeChip: {
-    width: 44,
-    height: 44,
-    borderRadius: radius.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.primary,
-  },
-  completeChipDone: {
-    backgroundColor: `${colors.success}22`,
-  },
-  content: {
-    paddingHorizontal: spacing.lg,
-    gap: spacing.md,
-  },
-  addExercise: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.xs,
-    paddingVertical: spacing.md,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderStyle: 'dashed',
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-  },
-  addExerciseText: {
-    color: colors.primary,
-    fontSize: fontSize.md,
-    fontWeight: '700',
+  list: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 20,
+    gap: 14,
   },
   footer: {
     position: 'absolute',
     left: 0,
     right: 0,
     bottom: 0,
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.sm,
-    backgroundColor: colors.background,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
+    paddingHorizontal: 16,
+    paddingTop: 12,
   },
-  completeBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    paddingVertical: spacing.md,
-    borderRadius: radius.md,
-    backgroundColor: colors.success,
-  },
-  completeBtnText: {
-    color: colors.primaryText,
-    fontSize: fontSize.md,
-    fontWeight: '800',
+  footerFade: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: -28,
+    height: 28,
   },
 });

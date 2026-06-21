@@ -13,12 +13,16 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { getAllExercises } from '@/db/queries/exercises';
 import { addTemplateDayExercise } from '@/db/queries/templates';
+import { ScreenHeader } from '@/components/shared/ScreenHeader';
+import { SolidButton } from '@/components/shared/Button';
 import { useWorkoutStore } from '@/store/workoutStore';
+import { useAccent } from '@/store/prefsStore';
 import { CATEGORIES, categoryColor, categoryLabel } from '@/constants/categories';
-import { colors, fontSize, radius, spacing } from '@/constants/colors';
+import { colors, fonts, fontSize, radius, spacing } from '@/constants/colors';
 import type { Category } from '@/types';
 
 export default function AddExerciseModal() {
+  const { accent } = useAccent();
   const params = useLocalSearchParams<{ date?: string; templateDayId?: string }>();
   const addExerciseToDate = useWorkoutStore((s) => s.addExerciseToDate);
 
@@ -47,6 +51,13 @@ export default function AddExerciseModal() {
 
   return (
     <View style={styles.screen}>
+      <ScreenHeader
+        kicker="Toevoegen"
+        title="Oefening"
+        accent={accent}
+        onBack={() => router.back()}
+        backIcon="close"
+      />
       <View style={styles.searchWrap}>
         <Ionicons name="search" size={18} color={colors.textMuted} />
         <TextInput
@@ -71,7 +82,7 @@ export default function AddExerciseModal() {
             <Pressable
               key={cat}
               onPress={() => setCategory(cat)}
-              style={[styles.tab, active && styles.tabActive]}
+              style={[styles.tab, active && { backgroundColor: accent, borderColor: accent }]}
             >
               <Text style={[styles.tabText, active && styles.tabTextActive]}>
                 {cat === 'all' ? 'Alle' : categoryLabel(cat)}
@@ -94,7 +105,7 @@ export default function AddExerciseModal() {
               <Ionicons
                 name={added ? 'checkmark-circle' : 'add-circle-outline'}
                 size={22}
-                color={added ? colors.success : colors.primary}
+                color={added ? colors.success : accent}
               />
             </Pressable>
           );
@@ -102,11 +113,11 @@ export default function AddExerciseModal() {
       </ScrollView>
 
       <View style={styles.footer}>
-        <Pressable style={styles.doneBtn} onPress={() => router.back()}>
-          <Text style={styles.doneBtnText}>
-            Klaar{addedIds.length > 0 ? ` (${addedIds.length} toegevoegd)` : ''}
-          </Text>
-        </Pressable>
+        <SolidButton
+          label={`Klaar${addedIds.length > 0 ? ` (${addedIds.length} toegevoegd)` : ''}`}
+          accent={accent}
+          onPress={() => router.back()}
+        />
       </View>
     </View>
   );
@@ -116,12 +127,12 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: colors.background,
-    paddingTop: spacing.md,
   },
   searchWrap: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
+    marginTop: spacing.sm,
     marginHorizontal: spacing.lg,
     paddingHorizontal: spacing.md,
     paddingVertical: 10,
@@ -152,14 +163,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
-  tabActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
   tabText: {
     color: colors.textMuted,
     fontSize: fontSize.sm,
-    fontWeight: '600',
+    fontFamily: fonts.jakarta600,
   },
   tabTextActive: {
     color: colors.primaryText,
@@ -200,16 +207,5 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     borderTopWidth: 1,
     borderTopColor: colors.border,
-  },
-  doneBtn: {
-    backgroundColor: colors.primary,
-    borderRadius: radius.md,
-    paddingVertical: spacing.md,
-    alignItems: 'center',
-  },
-  doneBtnText: {
-    color: colors.primaryText,
-    fontSize: fontSize.md,
-    fontWeight: '700',
   },
 });

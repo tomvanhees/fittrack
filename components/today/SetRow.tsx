@@ -1,10 +1,12 @@
 // components/today/SetRow.tsx
+// Eén set-rij: genummerde chip (gevuld met accent zodra ingevuld), "vorige"-hint
+// en grote, borderloze cijfer-inputs in de stijl "62.5 kg × 10".
 
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { NumberInput } from '@/components/shared/NumberInput';
-import { colors, fontSize, spacing } from '@/constants/colors';
+import { colors, fonts, radius } from '@/constants/colors';
 import type { WorkoutSet } from '@/types';
 
 interface SetRowProps {
@@ -12,13 +14,14 @@ interface SetRowProps {
   previousSet?: WorkoutSet;
   currentSet?: WorkoutSet;
   editable: boolean;
+  accent: string;
   onSave: (weight: number, reps: number) => void;
   onRemove?: () => void;
 }
 
 function numToStr(n: number | undefined): string {
   if (n === undefined || n === 0) return '';
-  return Number.isInteger(n) ? String(n) : String(n);
+  return String(n);
 }
 
 export function SetRow({
@@ -26,6 +29,7 @@ export function SetRow({
   previousSet,
   currentSet,
   editable,
+  accent,
   onSave,
   onRemove,
 }: SetRowProps) {
@@ -41,47 +45,56 @@ export function SetRow({
   function commit() {
     const w = parseFloat(weight);
     const r = parseInt(reps, 10);
-    // Sla enkel op als er iets ingevuld is.
     if (weight === '' && reps === '') return;
     onSave(Number.isFinite(w) ? w : 0, Number.isFinite(r) ? r : 0);
   }
 
+  const hasWeight = weight !== '' && parseFloat(weight) > 0;
+  const hasReps = reps !== '' && parseInt(reps, 10) > 0;
+  const filled = hasWeight && hasReps;
+
   const prevLabel = previousSet
-    ? `${numToStr(previousSet.weight) || '0'}kg×${previousSet.reps}`
-    : '—';
+    ? `vorige ${numToStr(previousSet.weight) || '0'}×${previousSet.reps}`
+    : 'nieuw';
 
   return (
     <View style={styles.row}>
-      <Text style={styles.setLabel}>S{setNumber}</Text>
+      <View style={[styles.setChip, filled ? { backgroundColor: accent } : styles.setChipIdle]}>
+        <Text style={[styles.setChipText, filled && { color: '#fff' }]}>{setNumber}</Text>
+      </View>
 
       <Text style={styles.previous} numberOfLines={1}>
         {prevLabel}
       </Text>
 
-      <NumberInput
-        value={weight}
-        onChangeNumber={setWeight}
-        onBlur={commit}
-        editable={editable}
-        allowDecimal
-        placeholder={previousSet ? String(previousSet.weight) : '0'}
-        style={styles.input}
-        accessibilityLabel={`Gewicht set ${setNumber}`}
-      />
-      <Text style={styles.times}>×</Text>
-      <NumberInput
-        value={reps}
-        onChangeNumber={setReps}
-        onBlur={commit}
-        editable={editable}
-        placeholder={previousSet ? String(previousSet.reps) : '0'}
-        style={styles.input}
-        accessibilityLabel={`Reps set ${setNumber}`}
-      />
+      <View style={styles.values}>
+        <NumberInput
+          value={weight}
+          onChangeNumber={setWeight}
+          onBlur={commit}
+          editable={editable}
+          allowDecimal
+          placeholder="—"
+          placeholderTextColor={colors.textPlaceholder}
+          style={[styles.input, styles.inputWeight, hasWeight && { color: accent }]}
+          accessibilityLabel={`Gewicht set ${setNumber}`}
+        />
+        <Text style={styles.unit}>kg ×</Text>
+        <NumberInput
+          value={reps}
+          onChangeNumber={setReps}
+          onBlur={commit}
+          editable={editable}
+          placeholder="—"
+          placeholderTextColor={colors.textPlaceholder}
+          style={[styles.input, styles.inputReps, hasReps && { color: colors.text }]}
+          accessibilityLabel={`Reps set ${setNumber}`}
+        />
+      </View>
 
       {editable && onRemove ? (
         <Pressable onPress={onRemove} hitSlop={8} style={styles.remove}>
-          <Ionicons name="close-circle" size={20} color={colors.textFaint} />
+          <Ionicons name="close" size={18} color={colors.textPlaceholder} />
         </Pressable>
       ) : (
         <View style={styles.remove} />
@@ -94,29 +107,56 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
-    paddingVertical: 4,
+    gap: 12,
+    paddingVertical: 6,
   },
-  setLabel: {
+  setChip: {
+    width: 28,
+    height: 28,
+    borderRadius: radius.chip,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  setChipIdle: {
+    backgroundColor: 'rgba(255,255,255,0.07)',
+  },
+  setChipText: {
+    fontSize: 13,
+    fontFamily: fonts.grotesk700,
     color: colors.textMuted,
-    fontSize: fontSize.sm,
-    fontWeight: '700',
-    width: 26,
   },
   previous: {
-    color: colors.textMuted,
-    fontSize: fontSize.sm,
-    width: 72,
+    flex: 1,
+    fontSize: 13,
+    fontFamily: fonts.jakarta500,
+    color: colors.textFaint,
+  },
+  values: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 6,
   },
   input: {
-    flex: 1,
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    borderRadius: 0,
+    paddingVertical: 2,
+    paddingHorizontal: 0,
+    textAlign: 'right',
+    fontSize: 22,
+    fontFamily: fonts.grotesk700,
+    color: colors.text,
+    minWidth: 0,
   },
-  times: {
+  inputWeight: { width: 64 },
+  inputReps: { width: 38 },
+  unit: {
+    fontSize: 13,
     color: colors.textFaint,
-    fontSize: fontSize.md,
+    fontFamily: fonts.jakarta600,
   },
   remove: {
-    width: 24,
+    width: 22,
     alignItems: 'center',
   },
 });

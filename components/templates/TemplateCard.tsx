@@ -2,8 +2,11 @@
 
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { AccentCard } from '@/components/shared/AccentCard';
+import { SolidButton } from '@/components/shared/Button';
 import { WEEKDAY_LABELS } from '@/constants/categories';
-import { colors, fontSize, radius, shadow, spacing } from '@/constants/colors';
+import { useAccent } from '@/store/prefsStore';
+import { colors, fonts, fontSize } from '@/constants/colors';
 import type { TemplateSummary } from '@/db/queries/templates';
 
 interface TemplateCardProps {
@@ -13,6 +16,7 @@ interface TemplateCardProps {
 }
 
 export function TemplateCard({ template, onUse, onEdit }: TemplateCardProps) {
+  const { accent } = useAccent();
   const dayLabels = template.weekdays.map((w) => WEEKDAY_LABELS[w]).join(' • ');
   const summary =
     template.dayCount > 0
@@ -20,68 +24,53 @@ export function TemplateCard({ template, onUse, onEdit }: TemplateCardProps) {
       : 'Nog geen dagen ingevuld';
 
   return (
-    <View style={styles.card}>
+    <AccentCard accentColor={accent}>
       <Text style={styles.name}>{template.name}</Text>
       <Text style={styles.summary}>{summary}</Text>
 
       <View style={styles.actions}>
-        <Pressable style={[styles.btn, styles.btnPrimary]} onPress={onUse}>
-          <Ionicons name="calendar-outline" size={16} color={colors.primaryText} />
-          <Text style={styles.btnPrimaryText}>Gebruik deze week</Text>
-        </Pressable>
-        <Pressable style={[styles.btn, styles.btnIcon]} onPress={onEdit}>
+        <SolidButton
+          label="Gebruik deze week"
+          icon="calendar-outline"
+          accent={accent}
+          onPress={onUse}
+          style={styles.useBtn}
+        />
+        <Pressable style={styles.editBtn} onPress={onEdit}>
           <Ionicons name="create-outline" size={18} color={colors.text} />
         </Pressable>
       </View>
-    </View>
+    </AccentCard>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.lg,
-    ...shadow,
-    gap: spacing.xs,
-  },
   name: {
     color: colors.text,
-    fontSize: fontSize.lg,
-    fontWeight: '700',
+    fontSize: 19,
+    fontFamily: fonts.jakarta800,
+    letterSpacing: -0.3,
   },
   summary: {
     color: colors.textMuted,
     fontSize: fontSize.sm,
+    fontFamily: fonts.jakarta500,
+    marginTop: 4,
   },
   actions: {
     flexDirection: 'row',
-    gap: spacing.sm,
-    marginTop: spacing.md,
+    gap: 10,
+    marginTop: 16,
   },
-  btn: {
-    flexDirection: 'row',
+  useBtn: {
+    flex: 1,
+    paddingVertical: 12,
+  },
+  editBtn: {
+    width: 48,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 4,
-    paddingVertical: 10,
-    borderRadius: radius.md,
-  },
-  btnPrimary: {
-    flex: 1,
-    backgroundColor: colors.primary,
-  },
-  btnPrimaryText: {
-    color: colors.primaryText,
-    fontSize: fontSize.sm,
-    fontWeight: '700',
-  },
-  btnIcon: {
-    width: 44,
+    borderRadius: 16,
     backgroundColor: colors.surfaceAlt,
-    borderWidth: 1,
-    borderColor: colors.border,
   },
 });

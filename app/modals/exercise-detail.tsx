@@ -6,12 +6,16 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { getExerciseById, deleteCustomExercise } from '@/db/queries/exercises';
 import { getExerciseHistory } from '@/db/queries/workouts';
+import { ScreenHeader } from '@/components/shared/ScreenHeader';
+import { SolidButton } from '@/components/shared/Button';
 import { useWorkoutStore } from '@/store/workoutStore';
 import { categoryColor, categoryLabel } from '@/constants/categories';
 import { formatLongDate } from '@/lib/date';
+import { useAccent } from '@/store/prefsStore';
 import { colors, fontSize, radius, spacing } from '@/constants/colors';
 
 export default function ExerciseDetailModal() {
+  const { accent } = useAccent();
   const { id } = useLocalSearchParams<{ id: string }>();
   const exerciseId = Number(id);
   const addExerciseToToday = useWorkoutStore((s) => s.addExerciseToToday);
@@ -22,6 +26,7 @@ export default function ExerciseDetailModal() {
   if (!exercise) {
     return (
       <View style={styles.screen}>
+        <ScreenHeader kicker="Oefening" title="Detail" accent={accent} onBack={() => router.back()} backIcon="close" />
         <Text style={styles.missing}>Oefening niet gevonden.</Text>
       </View>
     );
@@ -56,19 +61,21 @@ export default function ExerciseDetailModal() {
   }
 
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-      <View style={styles.header}>
-        <View style={[styles.dot, { backgroundColor: categoryColor(exercise.category) }]} />
-        <View style={{ flex: 1 }}>
-          <Text style={styles.name}>{exercise.name}</Text>
-          <Text style={styles.category}>{categoryLabel(exercise.category)}</Text>
-        </View>
-      </View>
-
-      <Pressable style={styles.addBtn} onPress={handleAddToToday}>
-        <Ionicons name="add-circle" size={20} color={colors.primaryText} />
-        <Text style={styles.addBtnText}>Toevoegen aan vandaag</Text>
-      </Pressable>
+    <View style={styles.screen}>
+      <ScreenHeader
+        kicker={categoryLabel(exercise.category)}
+        title={exercise.name}
+        accent={categoryColor(exercise.category)}
+        onBack={() => router.back()}
+        backIcon="close"
+      />
+      <ScrollView contentContainerStyle={styles.content}>
+      <SolidButton
+        label="Toevoegen aan vandaag"
+        icon="add-circle"
+        accent={accent}
+        onPress={handleAddToToday}
+      />
 
       <Text style={styles.sectionTitle}>Recente sessies</Text>
 
@@ -102,7 +109,8 @@ export default function ExerciseDetailModal() {
           <Text style={styles.deleteBtnText}>Oefening verwijderen</Text>
         </Pressable>
       ) : null}
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
@@ -112,7 +120,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   content: {
-    padding: spacing.lg,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.sm,
     gap: spacing.md,
     paddingBottom: spacing.xxl,
   },
@@ -120,40 +129,6 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     textAlign: 'center',
     marginTop: spacing.xxl,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  dot: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-  },
-  name: {
-    color: colors.text,
-    fontSize: fontSize.xl,
-    fontWeight: '800',
-  },
-  category: {
-    color: colors.textMuted,
-    fontSize: fontSize.md,
-    marginTop: 2,
-  },
-  addBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.primary,
-    borderRadius: radius.md,
-    paddingVertical: spacing.md,
-  },
-  addBtnText: {
-    color: colors.primaryText,
-    fontSize: fontSize.md,
-    fontWeight: '700',
   },
   sectionTitle: {
     color: colors.text,

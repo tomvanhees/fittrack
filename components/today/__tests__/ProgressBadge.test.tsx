@@ -24,18 +24,18 @@ describe('<ProgressBadge />', () => {
     jest.useRealTimers();
   });
 
-  it('toont "Nieuw" zonder vorige sessie', () => {
-    render(<ProgressBadge previousSets={[]} currentSets={[set(80, 8)]} />);
-    expect(screen.getByText('Nieuw')).toBeOnTheScreen();
+  it('toont geen badge zonder vorige sessie', () => {
+    render(<ProgressBadge previousSets={[]} currentSets={[set(80, 8)]} accent="#FF4D6D" />);
+    expect(screen.queryByText('NIEUW')).toBeNull();
   });
 
   it('toont de gewichtstoename', () => {
-    render(<ProgressBadge previousSets={[set(80, 8)]} currentSets={[set(85, 8)]} />);
+    render(<ProgressBadge previousSets={[set(80, 8)]} currentSets={[set(85, 8)]} accent="#FF4D6D" />);
     expect(screen.getByText('+5 kg')).toBeOnTheScreen();
   });
 
   it('toont "Gelijk" bij identieke prestatie', () => {
-    render(<ProgressBadge previousSets={[set(80, 8)]} currentSets={[set(80, 8)]} />);
+    render(<ProgressBadge previousSets={[set(80, 8)]} currentSets={[set(80, 8)]} accent="#FF4D6D" />);
     expect(screen.getByText('Gelijk')).toBeOnTheScreen();
   });
 });

@@ -10,12 +10,17 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GoalRing } from '@/components/goals/GoalRing';
 import { goalDisplay } from '@/components/goals/goalDisplay';
 import { EmptyState } from '@/components/shared/EmptyState';
+import { ScreenHeader } from '@/components/shared/ScreenHeader';
+import { AccentCard } from '@/components/shared/AccentCard';
+import { SolidButton } from '@/components/shared/Button';
 import { deleteGoal, getGoals, getGoalProgress, setGoalArchived } from '@/db/queries/goals';
+import { useAccent } from '@/store/prefsStore';
 import { colors, fontSize, radius, spacing } from '@/constants/colors';
 import type { Goal, GoalProgress } from '@/types';
 
 export default function GoalsScreen() {
   const insets = useSafeAreaInsets();
+  const { accent } = useAccent();
   const [active, setActive] = useState<GoalProgress[]>([]);
   const [archived, setArchived] = useState<Goal[]>([]);
 
@@ -46,15 +51,13 @@ export default function GoalsScreen() {
   }
 
   return (
-    <ScrollView
-      style={styles.screen}
-      contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + spacing.xl }]}
-      showsVerticalScrollIndicator={false}
-    >
-      <Pressable style={styles.addBtn} onPress={() => openEdit()}>
-        <Ionicons name="add" size={20} color={colors.primaryText} />
-        <Text style={styles.addBtnText}>Nieuw doel</Text>
-      </Pressable>
+    <View style={styles.screen}>
+      <ScreenHeader kicker="Targets" title="Doelen" accent={accent} onBack={() => router.back()} />
+      <ScrollView
+        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + spacing.xl }]}
+        showsVerticalScrollIndicator={false}
+      >
+      <SolidButton label="Nieuw doel" icon="add" accent={accent} onPress={() => openEdit()} />
 
       {active.length === 0 ? (
         <EmptyState
@@ -66,29 +69,32 @@ export default function GoalsScreen() {
         active.map((p) => {
           const d = goalDisplay(p);
           return (
-            <Pressable key={p.goal.id} style={styles.card} onPress={() => openEdit(p.goal.id)}>
-              <GoalRing
-                pct={p.pct}
-                title=""
-                centerLabel={d.centerLabel}
-                deltaLabel=""
-                reached={p.reached}
-                size={84}
-              />
-              <View style={styles.cardBody}>
-                <Text style={styles.cardTitle} numberOfLines={1}>{d.title}</Text>
-                <Text style={styles.cardSubtitle} numberOfLines={1}>{d.subtitle}</Text>
-                <Text
-                  style={[styles.cardDelta, p.reached && { color: colors.success }]}
-                  numberOfLines={1}
-                >
-                  {d.deltaLabel}
-                </Text>
+            <AccentCard key={p.goal.id} accentColor={accent} onPress={() => openEdit(p.goal.id)}>
+              <View style={styles.cardInner}>
+                <GoalRing
+                  pct={p.pct}
+                  title=""
+                  centerLabel={d.centerLabel}
+                  deltaLabel=""
+                  reached={p.reached}
+                  size={84}
+                  color={accent}
+                />
+                <View style={styles.cardBody}>
+                  <Text style={styles.cardTitle} numberOfLines={1}>{d.title}</Text>
+                  <Text style={styles.cardSubtitle} numberOfLines={1}>{d.subtitle}</Text>
+                  <Text
+                    style={[styles.cardDelta, p.reached && { color: colors.success }]}
+                    numberOfLines={1}
+                  >
+                    {d.deltaLabel}
+                  </Text>
+                </View>
+                <Pressable hitSlop={10} onPress={() => showActions(p)} style={styles.menuBtn}>
+                  <Ionicons name="ellipsis-horizontal" size={20} color={colors.textMuted} />
+                </Pressable>
               </View>
-              <Pressable hitSlop={10} onPress={() => showActions(p)} style={styles.menuBtn}>
-                <Ionicons name="ellipsis-horizontal" size={20} color={colors.textMuted} />
-              </Pressable>
-            </Pressable>
+            </AccentCard>
           );
         })
       )}
@@ -128,7 +134,8 @@ export default function GoalsScreen() {
           })}
         </>
       ) : null}
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
@@ -138,22 +145,15 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   content: {
-    padding: spacing.lg,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.lg,
     gap: spacing.md,
   },
-  addBtn: {
+  cardInner: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.xs,
-    backgroundColor: colors.primary,
-    borderRadius: radius.md,
-    paddingVertical: spacing.md,
-  },
-  addBtnText: {
-    color: colors.primaryText,
-    fontSize: fontSize.md,
-    fontWeight: '700',
+    gap: spacing.md,
   },
   card: {
     flexDirection: 'row',

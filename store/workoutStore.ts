@@ -16,7 +16,7 @@ import {
   setRestDay as dbSetRestDay,
   upsertSet,
 } from '@/db/queries/workouts';
-import { applyTemplateToWeek } from '@/db/queries/templates';
+import { applyTemplateToWeek, getTemplateDayLabel } from '@/db/queries/templates';
 import { todayISO, weekDatesOf } from '@/lib/date';
 import type { ExerciseWithSets, WorkoutDay, WorkoutSet } from '@/types';
 
@@ -35,6 +35,7 @@ interface WorkoutStore {
   todayDate: string;
   todayExercises: ExerciseWithSets[];
   todayCompletedAt?: string;
+  todaySessionLabel?: string;
   loadToday: (date?: string) => Promise<void>;
   saveSet: (workoutExerciseId: number, set: Partial<WorkoutSet>) => Promise<void>;
   addSetToExercise: (workoutExerciseId: number) => Promise<void>;
@@ -79,6 +80,7 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
   todayDate: todayISO(),
   todayExercises: [],
   todayCompletedAt: undefined,
+  todaySessionLabel: undefined,
 
   loadToday: async (date) => {
     const target = date ?? get().todayDate;
@@ -89,6 +91,9 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
       todayDate: target,
       todayExercises: exercises,
       todayCompletedAt: day?.completedAt,
+      todaySessionLabel: day?.templateDayId
+        ? getTemplateDayLabel(day.templateDayId)
+        : undefined,
     });
   },
 

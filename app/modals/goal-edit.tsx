@@ -19,10 +19,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { KeyboardAvoider } from '@/components/shared/KeyboardAvoider';
 import { NumberInput } from '@/components/shared/NumberInput';
+import { ScreenHeader } from '@/components/shared/ScreenHeader';
+import { SolidButton } from '@/components/shared/Button';
 import { getAllExercises } from '@/db/queries/exercises';
 import { createGoal, getGoalById, updateGoal } from '@/db/queries/goals';
 import { categoryColor } from '@/constants/categories';
-import { colors, fontSize, radius, spacing } from '@/constants/colors';
+import { useAccent } from '@/store/prefsStore';
+import { colors, fonts, fontSize, radius, spacing } from '@/constants/colors';
 import type { Goal, GoalType, Granularity } from '@/types';
 
 const TYPE_OPTIONS: { key: GoalType; label: string; hint: string }[] = [
@@ -36,6 +39,7 @@ function targetUnit(type: GoalType): string {
 }
 
 export default function GoalEditModal() {
+  const { accent } = useAccent();
   const params = useLocalSearchParams<{ id?: string }>();
   const editingId = params.id ? Number(params.id) : null;
   const existing = useMemo<Goal | null>(
@@ -102,7 +106,7 @@ export default function GoalEditModal() {
           return (
             <Pressable
               key={opt.key}
-              style={[styles.segmentItem, active && styles.segmentItemActive]}
+              style={[styles.segmentItem, active && { backgroundColor: accent }]}
               onPress={() => setType(opt.key)}
             >
               <Text style={[styles.segmentText, active && styles.segmentTextActive]}>
@@ -117,6 +121,13 @@ export default function GoalEditModal() {
 
   return (
     <KeyboardAvoider style={styles.screen} behavior="padding">
+      <ScreenHeader
+        kicker="Doel"
+        title={editingId != null ? 'Bewerken' : 'Nieuw doel'}
+        accent={accent}
+        onBack={() => router.back()}
+        backIcon="close"
+      />
       {type === 'strength' ? (
         // Vaste kop met streefwaarden; alleen de oefeningenlijst scrollt.
         <View style={styles.flex}>
@@ -178,7 +189,10 @@ export default function GoalEditModal() {
               return (
                 <Pressable
                   key={ex.id}
-                  style={[styles.exerciseRow, active && styles.exerciseRowActive]}
+                  style={[
+                    styles.exerciseRow,
+                    active && { borderColor: accent, backgroundColor: `${accent}1A` },
+                  ]}
                   onPress={() => setExerciseId(ex.id)}
                 >
                   <View
@@ -188,7 +202,7 @@ export default function GoalEditModal() {
                     {ex.name}
                   </Text>
                   {active ? (
-                    <Ionicons name="checkmark-circle" size={20} color={colors.primary} />
+                    <Ionicons name="checkmark-circle" size={20} color={accent} />
                   ) : null}
                 </Pressable>
               );
@@ -213,7 +227,7 @@ export default function GoalEditModal() {
               return (
                 <Pressable
                   key={g}
-                  style={[styles.segmentItem, active && styles.segmentItemActive]}
+                  style={[styles.segmentItem, active && { backgroundColor: accent }]}
                   onPress={() => setGranularity(g)}
                 >
                   <Text style={[styles.segmentText, active && styles.segmentTextActive]}>
@@ -239,15 +253,12 @@ export default function GoalEditModal() {
       )}
 
       <View style={styles.footer}>
-        <Pressable
-          style={[styles.saveBtn, !valid && styles.saveBtnDisabled]}
+        <SolidButton
+          label={editingId != null ? 'Opslaan' : 'Doel toevoegen'}
+          accent={accent}
           onPress={handleSave}
           disabled={!valid}
-        >
-          <Text style={styles.saveBtnText}>
-            {editingId != null ? 'Opslaan' : 'Doel toevoegen'}
-          </Text>
-        </Pressable>
+        />
       </View>
     </KeyboardAvoider>
   );
@@ -307,13 +318,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: radius.pill,
   },
-  segmentItemActive: {
-    backgroundColor: colors.primary,
-  },
   segmentText: {
     color: colors.textMuted,
     fontSize: fontSize.sm,
-    fontWeight: '700',
+    fontFamily: fonts.jakarta700,
   },
   segmentTextActive: {
     color: colors.primaryText,
@@ -345,10 +353,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
-  },
-  exerciseRowActive: {
-    borderColor: colors.primary,
-    backgroundColor: `${colors.primary}1A`,
   },
   dot: {
     width: 8,
@@ -388,19 +392,5 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     borderTopWidth: 1,
     borderTopColor: colors.border,
-  },
-  saveBtn: {
-    backgroundColor: colors.primary,
-    borderRadius: radius.md,
-    paddingVertical: spacing.md,
-    alignItems: 'center',
-  },
-  saveBtnDisabled: {
-    opacity: 0.4,
-  },
-  saveBtnText: {
-    color: colors.primaryText,
-    fontSize: fontSize.md,
-    fontWeight: '700',
   },
 });

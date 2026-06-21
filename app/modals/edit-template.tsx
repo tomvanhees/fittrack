@@ -6,6 +6,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { TemplateDayEditor } from '@/components/templates/TemplateDayEditor';
 import { KeyboardAvoider } from '@/components/shared/KeyboardAvoider';
+import { ScreenHeader } from '@/components/shared/ScreenHeader';
+import { SolidButton } from '@/components/shared/Button';
 import {
   deleteTemplate,
   getOrCreateTemplateDay,
@@ -15,10 +17,12 @@ import {
   updateTemplateDayExerciseSets,
   updateTemplateName,
 } from '@/db/queries/templates';
+import { useAccent } from '@/store/prefsStore';
 import { colors, fontSize, radius, spacing } from '@/constants/colors';
 import type { TemplateWithDays } from '@/types';
 
 export default function EditTemplateModal() {
+  const { accent } = useAccent();
   const { id } = useLocalSearchParams<{ id: string }>();
   const templateId = Number(id);
 
@@ -105,6 +109,7 @@ export default function EditTemplateModal() {
   if (!template) {
     return (
       <View style={styles.screen}>
+        <ScreenHeader kicker="Template" title="Bewerken" accent={accent} onBack={() => router.back()} backIcon="close" />
         <Text style={styles.missing}>Template niet gevonden.</Text>
       </View>
     );
@@ -112,6 +117,7 @@ export default function EditTemplateModal() {
 
   return (
     <KeyboardAvoider style={styles.screen}>
+    <ScreenHeader kicker="Template" title="Bewerken" accent={accent} onBack={() => router.back()} backIcon="close" />
     <ScrollView
       style={styles.screen}
       contentContainerStyle={styles.content}
@@ -137,10 +143,13 @@ export default function EditTemplateModal() {
         onChangeLabel={handleChangeLabel}
       />
 
-      <Pressable style={styles.saveBtn} onPress={handleSave}>
-        <Ionicons name="save-outline" size={18} color={colors.primaryText} />
-        <Text style={styles.saveBtnText}>Opslaan</Text>
-      </Pressable>
+      <SolidButton
+        label="Opslaan"
+        icon="save-outline"
+        accent={accent}
+        onPress={handleSave}
+        style={styles.saveBtn}
+      />
 
       <Pressable style={styles.deleteBtn} onPress={handleDelete}>
         <Ionicons name="trash-outline" size={18} color={colors.danger} />
@@ -157,7 +166,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   content: {
-    padding: spacing.lg,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.sm,
     gap: spacing.md,
     paddingBottom: spacing.xxl,
   },
@@ -183,19 +193,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
   },
   saveBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.primary,
-    borderRadius: radius.md,
-    paddingVertical: spacing.md,
     marginTop: spacing.md,
-  },
-  saveBtnText: {
-    color: colors.primaryText,
-    fontSize: fontSize.md,
-    fontWeight: '700',
   },
   deleteBtn: {
     flexDirection: 'row',

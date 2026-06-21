@@ -2,7 +2,7 @@
 
 import { ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { colors, fontSize, radius, shadow, spacing } from '@/constants/colors';
+import { colors, fonts, fontSize, radius, shadow, spacing } from '@/constants/colors';
 
 interface StatCardProps {
   title: string;
@@ -31,7 +31,7 @@ export function StatCard({ title, value, subtitle, children }: StatCardProps) {
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.surface,
-    borderRadius: radius.lg,
+    borderRadius: radius.xl,
     borderWidth: 1,
     borderColor: colors.border,
     padding: spacing.lg,
@@ -46,7 +46,7 @@ const styles = StyleSheet.create({
   title: {
     color: colors.text,
     fontSize: fontSize.md,
-    fontWeight: '700',
+    fontFamily: fonts.jakarta700,
   },
   subtitle: {
     color: colors.textMuted,
@@ -56,6 +56,6 @@ const styles = StyleSheet.create({
   value: {
     color: colors.text,
     fontSize: fontSize.lg,
-    fontWeight: '800',
+    fontFamily: fonts.grotesk700,
   },
 });

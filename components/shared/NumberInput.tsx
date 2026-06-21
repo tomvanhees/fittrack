@@ -1,7 +1,7 @@
 // components/shared/NumberInput.tsx
 
 import { StyleSheet, TextInput, type TextInputProps } from 'react-native';
-import { colors, fontSize, radius } from '@/constants/colors';
+import { colors, fonts, fontSize, radius } from '@/constants/colors';
 
 interface NumberInputProps extends Omit<TextInputProps, 'onChangeText' | 'value'> {
   value: string;
@@ -49,7 +49,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     color: colors.text,
     fontSize: fontSize.md,
-    fontWeight: '600',
+    fontFamily: fonts.grotesk600,
     paddingVertical: 8,
     paddingHorizontal: 10,
     textAlign: 'center',

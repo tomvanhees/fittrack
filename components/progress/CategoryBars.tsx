@@ -3,7 +3,7 @@
 
 import { StyleSheet, Text, View } from 'react-native';
 import { categoryColor, categoryLabel } from '@/constants/categories';
-import { colors, fontSize, radius, spacing } from '@/constants/colors';
+import { colors, fonts, fontSize, radius, spacing } from '@/constants/colors';
 import { formatVolumeShort } from '@/lib/stats';
 import type { Category } from '@/types';
 
@@ -74,6 +74,6 @@ const styles = StyleSheet.create({
     textAlign: 'right',
     color: colors.text,
     fontSize: fontSize.sm,
-    fontWeight: '700',
+    fontFamily: fonts.grotesk700,
   },
 });

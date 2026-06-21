@@ -2,7 +2,7 @@
 
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { CATEGORIES } from '@/constants/categories';
-import { colors, radius, spacing, fontSize } from '@/constants/colors';
+import { colors, fonts, radius, spacing, fontSize } from '@/constants/colors';
 import type { Category } from '@/types';
 
 interface CategoryPickerProps {
@@ -50,7 +50,7 @@ const styles = StyleSheet.create({
   chipText: {
     color: colors.textMuted,
     fontSize: fontSize.sm,
-    fontWeight: '600',
+    fontFamily: fonts.jakarta600,
   },
   chipTextActive: {
     color: colors.primaryText,

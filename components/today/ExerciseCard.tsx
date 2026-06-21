@@ -1,4 +1,6 @@
 // components/today/ExerciseCard.tsx
+// Inklapbare oefenkaart met categorie-accentbalk. Uitgeklapt: set-rijen +
+// gevulde "Set toevoegen"-knop + voortgangsbadge. Ingeklapt: enkel titel + chevron.
 
 import { useMemo, useState } from 'react';
 import { LayoutAnimation, Platform, Pressable, StyleSheet, Text, UIManager, View } from 'react-native';
@@ -6,20 +8,21 @@ import { Ionicons } from '@expo/vector-icons';
 import { Swipeable } from 'react-native-gesture-handler';
 import { SetRow } from './SetRow';
 import { ProgressBadge } from './ProgressBadge';
+import { SolidButton } from '@/components/shared/Button';
+import { useRestTimerStore } from '@/store/restTimerStore';
 import { categoryColor } from '@/constants/categories';
-import { colors, fontSize, radius, shadow, spacing } from '@/constants/colors';
+import { colors, fonts, fontSize, radius } from '@/constants/colors';
 import type { ExerciseWithSets, WorkoutSet } from '@/types';
 
-if (
-  Platform.OS === 'android' &&
-  UIManager.setLayoutAnimationEnabledExperimental
-) {
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
 interface ExerciseCardProps {
   data: ExerciseWithSets;
   editable: boolean;
+  accent: string;
+  defaultExpanded?: boolean;
   onSaveSet: (workoutExerciseId: number, set: Partial<WorkoutSet>) => void;
   onRemoveSet: (workoutExerciseId: number, setNumber: number) => void;
   onRemoveExercise: (workoutExerciseId: number) => void;
@@ -28,14 +31,18 @@ interface ExerciseCardProps {
 export function ExerciseCard({
   data,
   editable,
+  accent,
+  defaultExpanded = false,
   onSaveSet,
   onRemoveSet,
   onRemoveExercise,
 }: ExerciseCardProps) {
-  const [collapsed, setCollapsed] = useState(false);
   const [extraRows, setExtraRows] = useState(0);
+  const [expanded, setExpanded] = useState(defaultExpanded);
+  const startRest = useRestTimerStore((s) => s.start);
 
   const { exercise, previousSets, currentSets, workoutExerciseId, plannedSets } = data;
+  const barColor = categoryColor(exercise.category);
 
   const baseRows = Math.max(previousSets.length, currentSets.length, plannedSets ?? 0, 1);
   const rowCount = baseRows + extraRows;
@@ -51,9 +58,9 @@ export function ExerciseCard({
     });
   }, [rowCount, previousSets, currentSets]);
 
-  function toggleCollapse() {
+  function toggle() {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setCollapsed((c) => !c);
+    setExpanded((e) => !e);
   }
 
   function handleAddSet() {
@@ -62,8 +69,8 @@ export function ExerciseCard({
   }
 
   function handleRemoveSet(setNumber: number) {
+    if (rowCount <= 1) return;
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    // Verwijder een opgeslagen set; krimp anders het lokale aantal rijen.
     if (currentSets.some((s) => s.setNumber === setNumber)) {
       onRemoveSet(workoutExerciseId, setNumber);
     } else if (extraRows > 0) {
@@ -73,10 +80,7 @@ export function ExerciseCard({
 
   function renderRightActions() {
     return (
-      <Pressable
-        style={styles.deleteAction}
-        onPress={() => onRemoveExercise(workoutExerciseId)}
-      >
+      <Pressable style={styles.deleteAction} onPress={() => onRemoveExercise(workoutExerciseId)}>
         <Ionicons name="trash" size={22} color={colors.primaryText} />
         <Text style={styles.deleteLabel}>Verwijder</Text>
       </Pressable>
@@ -85,67 +89,63 @@ export function ExerciseCard({
 
   const card = (
     <View style={styles.card}>
-      <View style={styles.header}>
-        <View style={[styles.dot, { backgroundColor: categoryColor(exercise.category) }]} />
-        <Text style={styles.name} numberOfLines={1}>
-          {exercise.name}
-        </Text>
-        {editable ? (
-          <Pressable
-            onPress={() => onRemoveExercise(workoutExerciseId)}
-            hitSlop={8}
-            style={styles.headerBtn}
-          >
-            <Ionicons name="remove-circle-outline" size={22} color={colors.textMuted} />
-          </Pressable>
-        ) : null}
-        <Pressable onPress={toggleCollapse} hitSlop={8} style={styles.headerBtn}>
-          <Ionicons
-            name={collapsed ? 'chevron-down' : 'chevron-up'}
-            size={22}
-            color={colors.textMuted}
-          />
+      <View style={[styles.bar, { backgroundColor: barColor }]} pointerEvents="none" />
+
+      <View style={styles.body}>
+        <Pressable style={styles.header} onPress={toggle} hitSlop={6}>
+          <Text style={styles.name} numberOfLines={1}>
+            {exercise.name}
+          </Text>
+          {expanded ? (
+            <>
+              {editable ? (
+                <Pressable
+                  onPress={() => startRest()}
+                  hitSlop={8}
+                  style={styles.restBtn}
+                  accessibilityLabel="Rust-timer starten"
+                >
+                  <Ionicons name="timer-outline" size={21} color={accent} />
+                </Pressable>
+              ) : null}
+              <ProgressBadge previousSets={previousSets} currentSets={currentSets} accent={accent} />
+            </>
+          ) : (
+            <Ionicons name="chevron-down" size={22} color={colors.textMuted} />
+          )}
         </Pressable>
-      </View>
 
-      {!collapsed ? (
-        <>
-          <View style={styles.divider} />
-          <View style={styles.columns}>
-            <Text style={[styles.colLabel, styles.colSet]} />
-            <Text style={[styles.colLabel, styles.colPrev]}>Vorige</Text>
-            <Text style={[styles.colLabel, styles.colNew]}>Nieuw</Text>
-          </View>
+        {expanded ? (
+          <>
+            <View style={styles.sets}>
+              {rows.map((r) => (
+                <SetRow
+                  key={r.setNumber}
+                  setNumber={r.setNumber}
+                  previousSet={r.previousSet}
+                  currentSet={r.currentSet}
+                  editable={editable}
+                  accent={accent}
+                  onSave={(weight, reps) =>
+                    onSaveSet(workoutExerciseId, { setNumber: r.setNumber, weight, reps })
+                  }
+                  onRemove={editable ? () => handleRemoveSet(r.setNumber) : undefined}
+                />
+              ))}
+            </View>
 
-          {rows.map((r) => (
-            <SetRow
-              key={r.setNumber}
-              setNumber={r.setNumber}
-              previousSet={r.previousSet}
-              currentSet={r.currentSet}
-              editable={editable}
-              onSave={(weight, reps) =>
-                onSaveSet(workoutExerciseId, { setNumber: r.setNumber, weight, reps })
-              }
-              onRemove={editable ? () => handleRemoveSet(r.setNumber) : undefined}
-            />
-          ))}
-
-          <View style={styles.footer}>
             {editable ? (
-              <Pressable onPress={handleAddSet} style={styles.addSet} hitSlop={6}>
-                <Ionicons name="add" size={16} color={colors.primary} />
-                <Text style={styles.addSetText}>Set</Text>
-              </Pressable>
-            ) : (
-              <View />
-            )}
-            {previousSets.length > 0 ? (
-              <ProgressBadge previousSets={previousSets} currentSets={currentSets} />
+              <SolidButton
+                label="Set toevoegen"
+                icon="add"
+                accent={accent}
+                onPress={handleAddSet}
+                style={styles.addSet}
+              />
             ) : null}
-          </View>
-        </>
-      ) : null}
+          </>
+        ) : null}
+      </View>
     </View>
   );
 
@@ -158,88 +158,63 @@ export function ExerciseCard({
   );
 }
 
+const BAR_WIDTH = 4;
+
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.lg,
-    ...shadow,
+    borderRadius: radius.xl,
+    overflow: 'hidden',
+  },
+  bar: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: BAR_WIDTH,
+  },
+  body: {
+    paddingLeft: 18 + BAR_WIDTH,
+    paddingRight: 16,
+    paddingVertical: 16,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
-  },
-  dot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+    gap: 11,
+    minHeight: 30,
   },
   name: {
     flex: 1,
     color: colors.text,
-    fontSize: fontSize.lg,
-    fontWeight: '700',
+    fontSize: 19,
+    fontFamily: fonts.jakarta800,
+    letterSpacing: -0.3,
   },
-  headerBtn: {
-    padding: 2,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: colors.border,
-    marginVertical: spacing.md,
-  },
-  columns: {
-    flexDirection: 'row',
+  restBtn: {
+    width: 30,
+    height: 30,
     alignItems: 'center',
-    gap: spacing.sm,
-    marginBottom: 4,
+    justifyContent: 'center',
   },
-  colLabel: {
-    color: colors.textFaint,
-    fontSize: fontSize.xs,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-  },
-  colSet: { width: 26 },
-  colPrev: { width: 72 },
-  colNew: { flex: 1 },
-  footer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: spacing.md,
+  sets: {
+    marginTop: 12,
+    gap: 2,
   },
   addSet: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surfaceAlt,
-  },
-  addSetText: {
-    color: colors.primary,
-    fontSize: fontSize.sm,
-    fontWeight: '700',
+    marginTop: 14,
   },
   deleteAction: {
     backgroundColor: colors.danger,
     justifyContent: 'center',
     alignItems: 'center',
     width: 96,
-    marginVertical: 0,
-    borderRadius: radius.lg,
+    borderRadius: radius.xl,
     gap: 2,
   },
   deleteLabel: {
     color: colors.primaryText,
     fontSize: fontSize.xs,
-    fontWeight: '700',
+    fontFamily: fonts.jakarta700,
   },
 });

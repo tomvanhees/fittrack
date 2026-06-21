@@ -16,13 +16,17 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { CategoryPicker } from '@/components/shared/CategoryPicker';
 import { KeyboardAvoider } from '@/components/shared/KeyboardAvoider';
+import { ScreenHeader } from '@/components/shared/ScreenHeader';
+import { SolidButton } from '@/components/shared/Button';
 import { useLibraryStore } from '@/store/libraryStore';
+import { useAccent } from '@/store/prefsStore';
 import { CATEGORIES, categoryColor, categoryLabel } from '@/constants/categories';
-import { colors, fontSize, radius, spacing } from '@/constants/colors';
+import { colors, fonts, fontSize, radius, spacing } from '@/constants/colors';
 import type { Category, Exercise } from '@/types';
 
 export default function LibraryScreen() {
   const insets = useSafeAreaInsets();
+  const { accent } = useAccent();
   const {
     searchQuery,
     selectedCategory,
@@ -95,7 +99,7 @@ export default function LibraryScreen() {
             hitSlop={8}
             accessibilityLabel={`${ex.name} bewerken`}
           >
-            <Ionicons name="pencil" size={16} color={colors.primary} />
+            <Ionicons name="pencil" size={16} color={accent} />
           </Pressable>
         ) : (
           <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
@@ -108,6 +112,7 @@ export default function LibraryScreen() {
 
   return (
     <View style={styles.screen}>
+      <ScreenHeader kicker="Oefeningen" title="Bibliotheek" accent={accent} onBack={() => router.back()} />
       <View style={styles.searchWrap}>
         <Ionicons name="search" size={18} color={colors.textMuted} />
         <TextInput
@@ -136,7 +141,7 @@ export default function LibraryScreen() {
             <Pressable
               key={cat}
               onPress={() => setCategory(cat)}
-              style={[styles.tab, active && styles.tabActive]}
+              style={[styles.tab, active && { backgroundColor: accent, borderColor: accent }]}
             >
               <Text style={[styles.tabText, active && styles.tabTextActive]}>
                 {cat === 'all' ? 'Alle' : categoryLabel(cat)}
@@ -157,7 +162,7 @@ export default function LibraryScreen() {
             {standard.map(renderRow)}
             {custom.length > 0 ? (
               <View style={styles.sectionHeader}>
-                <Ionicons name="star" size={14} color={colors.new} />
+                <Ionicons name="star" size={14} color={accent} />
                 <Text style={styles.sectionTitle}>Mijn oefeningen</Text>
               </View>
             ) : null}
@@ -167,7 +172,7 @@ export default function LibraryScreen() {
       </ScrollView>
 
       <Pressable
-        style={[styles.fab, { bottom: insets.bottom + spacing.lg }]}
+        style={[styles.fab, { bottom: insets.bottom + spacing.lg, backgroundColor: accent, shadowColor: accent }]}
         onPress={openAdd}
       >
         <Ionicons name="add" size={20} color={colors.primaryText} />
@@ -200,15 +205,13 @@ export default function LibraryScreen() {
               <Text style={styles.fieldLabel}>Categorie</Text>
               <CategoryPicker value={newCategory} onChange={setNewCategory} />
 
-              <Pressable
-                style={[styles.saveBtn, newName.trim().length === 0 && styles.saveBtnDisabled]}
+              <SolidButton
+                label={editingId !== null ? 'Opslaan' : 'Toevoegen'}
+                accent={accent}
                 onPress={handleSave}
                 disabled={newName.trim().length === 0}
-              >
-                <Text style={styles.saveBtnText}>
-                  {editingId !== null ? 'Opslaan' : 'Toevoegen'}
-                </Text>
-              </Pressable>
+                style={styles.saveBtn}
+              />
             </Pressable>
           </Pressable>
         </KeyboardAvoider>
@@ -221,7 +224,6 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: colors.background,
-    paddingTop: spacing.md,
   },
   flex: {
     flex: 1,
@@ -230,6 +232,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
+    marginTop: spacing.sm,
     marginHorizontal: spacing.lg,
     paddingHorizontal: spacing.md,
     paddingVertical: 10,
@@ -260,14 +263,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
-  tabActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
   tabText: {
     color: colors.textMuted,
     fontSize: fontSize.sm,
-    fontWeight: '600',
+    fontFamily: fonts.jakarta600,
   },
   tabTextActive: {
     color: colors.primaryText,
@@ -324,8 +323,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
     borderRadius: radius.pill,
-    backgroundColor: colors.primary,
-    shadowColor: '#000',
     shadowOpacity: 0.3,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 },
@@ -334,7 +331,7 @@ const styles = StyleSheet.create({
   fabText: {
     color: colors.primaryText,
     fontSize: fontSize.md,
-    fontWeight: '700',
+    fontFamily: fonts.jakarta700,
   },
   backdrop: {
     flex: 1,
@@ -376,18 +373,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   saveBtn: {
-    backgroundColor: colors.primary,
-    borderRadius: radius.md,
-    paddingVertical: spacing.md,
-    alignItems: 'center',
     marginTop: spacing.sm,
-  },
-  saveBtnDisabled: {
-    opacity: 0.4,
-  },
-  saveBtnText: {
-    color: colors.primaryText,
-    fontSize: fontSize.md,
-    fontWeight: '700',
   },
 });
