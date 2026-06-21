@@ -60,6 +60,7 @@ export default function RootLayout() {
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="library" options={{ title: 'Bibliotheek' }} />
           <Stack.Screen name="progress" options={{ title: 'Voortgang' }} />
+          <Stack.Screen name="goals" options={{ title: 'Doelen' }} />
           <Stack.Screen
             name="modals/add-exercise"
             options={{ presentation: 'modal', title: 'Oefening toevoegen' }}
@@ -75,6 +76,10 @@ export default function RootLayout() {
           <Stack.Screen
             name="modals/auth"
             options={{ presentation: 'modal', title: 'Account' }}
+          />
+          <Stack.Screen
+            name="modals/goal-edit"
+            options={{ presentation: 'modal', title: 'Doel' }}
           />
         </Stack>
       </SafeAreaProvider>

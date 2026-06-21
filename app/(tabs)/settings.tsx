@@ -79,6 +79,20 @@ export default function SettingsScreen() {
         </Pressable>
       </View>
 
+      <Text style={styles.sectionTitle}>Doelen</Text>
+      <View style={styles.card}>
+        <Pressable style={styles.action} onPress={() => router.push('/goals')}>
+          <Ionicons name="flag-outline" size={20} color={colors.primary} />
+          <View style={styles.actionBody}>
+            <Text style={styles.actionTitle}>Doelen & targets</Text>
+            <Text style={styles.actionSubtitle}>
+              Stel doelen in voor kracht, consistentie en volume.
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+        </Pressable>
+      </View>
+
       <Text style={styles.sectionTitle}>Gegevens</Text>
       <View style={styles.card}>
         <Pressable style={styles.action} onPress={handleExport} disabled={exporting}>

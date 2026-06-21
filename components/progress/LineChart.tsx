@@ -16,6 +16,8 @@ interface LineChartProps {
   height?: number;
   color?: string;
   unit?: string; // bv. "kg"
+  /** Optionele doelwaarde — tekent een gestreepte streeflijn over de grafiek. */
+  targetValue?: number;
 }
 
 const PAD_TOP = 18;
@@ -34,14 +36,17 @@ export function LineChart({
   height = 190,
   color = colors.primary,
   unit = 'kg',
+  targetValue,
 }: LineChartProps) {
   if (points.length === 0) return null;
 
   const plotW = width - PAD_X * 2;
   const plotH = height - PAD_TOP - PAD_BOTTOM;
   const values = points.map((p) => p.value);
-  const max = Math.max(...values);
-  const min = Math.min(...values);
+  // Reken de streeflijn mee in de schaal zodat ze altijd zichtbaar blijft.
+  const hasTarget = targetValue != null && targetValue > 0;
+  const max = Math.max(...values, hasTarget ? targetValue : -Infinity);
+  const min = Math.min(...values, hasTarget ? targetValue : Infinity);
   const span = max - min || 1;
 
   const xFor = (i: number) =>
@@ -63,6 +68,30 @@ export function LineChart({
           stroke={colors.border}
           strokeWidth={1}
         />
+        {hasTarget ? (
+          <>
+            {/* streeflijn (doel) */}
+            <Line
+              x1={0}
+              y1={yFor(targetValue)}
+              x2={width}
+              y2={yFor(targetValue)}
+              stroke={colors.secondary}
+              strokeWidth={1.5}
+              strokeDasharray="5 4"
+            />
+            <SvgText
+              x={width - PAD_X}
+              y={Math.max(yFor(targetValue) - 4, 9)}
+              fill={colors.secondary}
+              fontSize={9}
+              fontWeight="700"
+              textAnchor="end"
+            >
+              {`Doel ${Math.round(targetValue)}`}
+            </SvgText>
+          </>
+        ) : null}
         {points.length > 1 ? (
           <Polyline
             points={polyPoints}

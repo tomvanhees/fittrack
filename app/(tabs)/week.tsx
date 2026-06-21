@@ -1,15 +1,7 @@
 // app/(tabs)/week.tsx
 
 import { useCallback, useState } from 'react';
-import {
-  Alert,
-  Modal,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -17,7 +9,7 @@ import { WeekBar } from '@/components/week/WeekBar';
 import { DayCard } from '@/components/week/DayCard';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { useWorkoutStore } from '@/store/workoutStore';
-import { getAllTemplates, weekHasExercises, type TemplateSummary } from '@/db/queries/templates';
+import { getAllTemplates, type TemplateSummary } from '@/db/queries/templates';
 import { addDays, formatWeekLabel } from '@/lib/date';
 import { colors, fontSize, radius, spacing } from '@/constants/colors';
 
@@ -56,19 +48,7 @@ export default function WeekScreen() {
 
   function handleApplyTemplate(template: TemplateSummary) {
     setTemplateSheet(false);
-    const apply = () => applyTemplate(template.id, selectedDate);
-    if (weekHasExercises(selectedDate)) {
-      Alert.alert(
-        'Week overschrijven?',
-        `Deze week bevat al oefeningen. "${template.name}" toepassen overschrijft de betrokken dagen.`,
-        [
-          { text: 'Annuleer', style: 'cancel' },
-          { text: 'Overschrijf', style: 'destructive', onPress: apply },
-        ]
-      );
-    } else {
-      apply();
-    }
+    applyTemplate(template.id, selectedDate);
   }
 
   return (

@@ -74,6 +74,35 @@ export interface ProgressResult {
   direction: ProgressDirection;
 }
 
+// Tijdvenster voor aggregaties & periode-gebonden doelen.
+export type Granularity = 'month' | 'year';
+
+// Doelen & targets
+export type GoalType = 'strength' | 'consistency' | 'volume';
+
+export interface Goal {
+  id: number;
+  type: GoalType;
+  exerciseId?: number;        // enkel bij 'strength'
+  targetValue: number;        // kg (strength), workouts/periode (consistency), kg volume
+  targetReps?: number;        // enkel bij 'strength' — reps waarbij het gewicht telt
+  granularity?: Granularity;  // 'month' | 'year' — enkel bij consistency/volume
+  targetDate?: string;        // optionele ISO-deadline
+  archived: boolean;
+  createdAt: string;          // ISO datum
+}
+
+// Doel + de huidige stand t.o.v. het target (voor ring & delta)
+export interface GoalProgress {
+  goal: Goal;
+  exerciseName?: string;      // ingevuld bij 'strength'
+  current: number;            // huidige waarde in dezelfde eenheid als targetValue
+  target: number;
+  pct: number;                // 0..1, geklemd
+  remaining: number;          // hoeveel er nog te gaan is (>= 0)
+  reached: boolean;
+}
+
 // Samengesteld type voor een template met dagen + oefeningen
 export interface TemplateDayWithExercises extends TemplateDay {
   exercises: (TemplateDayExercise & { exercise: Exercise })[];

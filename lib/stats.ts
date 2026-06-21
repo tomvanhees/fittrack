@@ -3,8 +3,11 @@
 // invullen en waarden formatteren. Geen DB-afhankelijkheid → goed unit-testbaar.
 
 import { MONTH_LABELS } from '@/constants/categories';
+import type { Granularity } from '@/types';
 
-export type Granularity = 'month' | 'year';
+// Granularity woont in '@/types'; her-export zodat bestaande imports
+// (`from '@/lib/stats'`) blijven werken.
+export type { Granularity };
 
 export interface Bucket {
   period: string; // sleutel: "2026-06" (maand) of "2026" (jaar)
@@ -104,4 +107,47 @@ export function sumValues(values: number[]): number {
 /** Hoogste waarde, of 0 bij lege reeks. */
 export function maxValue(values: number[]): number {
   return values.reduce((m, v) => (v > m ? v : m), 0);
+}
+
+// ---------- Doelen ----------
+
+export interface GoalStanding {
+  pct: number; // 0..1, geklemd
+  remaining: number; // resterend tot target, nooit negatief
+  reached: boolean;
+}
+
+/**
+ * Stand van een doel t.o.v. het target. `pct` is geklemd op [0, 1] zodat een
+ * voortgangsring nooit overloopt; `remaining` is afgekapt op 0 zodra het doel
+ * bereikt is. Een target <= 0 telt als direct bereikt.
+ */
+export function goalStanding(current: number, target: number): GoalStanding {
+  if (target <= 0) return { pct: 1, remaining: 0, reached: true };
+  const ratio = current / target;
+  const pct = Math.max(0, Math.min(1, ratio));
+  return {
+    pct,
+    remaining: Math.max(0, target - current),
+    reached: current >= target,
+  };
+}
+
+/** "12 kg te gaan" / "Doel bereikt 🎉" voor een krachtdoel. */
+export function strengthDeltaLabel(remaining: number, reached: boolean): string {
+  if (reached) return 'Doel bereikt 🎉';
+  return `${formatNumberNL(remaining)} kg te gaan`;
+}
+
+/** "2 workouts te gaan" / "Doel bereikt 🎉" voor een consistentiedoel. */
+export function consistencyDeltaLabel(remaining: number, reached: boolean): string {
+  if (reached) return 'Doel bereikt 🎉';
+  const n = Math.ceil(remaining);
+  return `${n} ${n === 1 ? 'workout' : 'workouts'} te gaan`;
+}
+
+/** "12.345 kg te gaan" / "Doel bereikt 🎉" voor een volumedoel. */
+export function volumeDeltaLabel(remaining: number, reached: boolean): string {
+  if (reached) return 'Doel bereikt 🎉';
+  return `${formatVolumeFull(remaining)} te gaan`;
 }

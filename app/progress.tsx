@@ -10,12 +10,15 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
-import { useFocusEffect } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { BarChart } from '@/components/progress/BarChart';
 import { LineChart } from '@/components/progress/LineChart';
 import { CategoryBars } from '@/components/progress/CategoryBars';
 import { StatCard } from '@/components/progress/StatCard';
+import { GoalRing } from '@/components/goals/GoalRing';
+import { goalDisplay } from '@/components/goals/goalDisplay';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { colors, fontSize, radius, spacing } from '@/constants/colors';
 import {
@@ -27,6 +30,11 @@ import {
   hasAnyLoggedSets,
   type TrackedExercise,
 } from '@/db/queries/stats';
+import {
+  getActiveGoalsWithProgress,
+  getStrengthGoalTarget,
+} from '@/db/queries/goals';
+import type { GoalProgress } from '@/types';
 import {
   bucketsFor,
   fillPeriods,
@@ -58,9 +66,12 @@ export default function ProgressScreen() {
   const [exerciseId, setExerciseId] = useState<number | null>(null);
   const [data, setData] = useState<StatsData | null>(null);
   const [strength, setStrength] = useState<StrengthPoint[]>([]);
+  const [goals, setGoals] = useState<GoalProgress[]>([]);
+  const [strengthTarget, setStrengthTarget] = useState<number | null>(null);
 
   const load = useCallback(
     (g: Granularity) => {
+      setGoals(getActiveGoalsWithProgress());
       if (!hasAnyLoggedSets()) {
         setData({
           hasData: false,
@@ -97,9 +108,11 @@ export default function ProgressScreen() {
     (id: number | null, sinceISO: string) => {
       if (id == null || !sinceISO) {
         setStrength([]);
+        setStrengthTarget(null);
         return;
       }
       setStrength(getStrengthProgression(id, sinceISO));
+      setStrengthTarget(getStrengthGoalTarget(id));
     },
     []
   );
@@ -150,6 +163,37 @@ export default function ProgressScreen() {
           );
         })}
       </View>
+
+      {/* Doelen — voortgangsringen, of een tip om er een in te stellen */}
+      {goals.length > 0 ? (
+        <StatCard title="Doelen" subtitle="Voortgang naar je targets">
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.rings}
+          >
+            {goals.map((p) => {
+              const d = goalDisplay(p);
+              return (
+                <GoalRing
+                  key={p.goal.id}
+                  pct={p.pct}
+                  title={d.title}
+                  centerLabel={d.centerLabel}
+                  deltaLabel={d.deltaLabel}
+                  reached={p.reached}
+                />
+              );
+            })}
+          </ScrollView>
+        </StatCard>
+      ) : (
+        <Pressable style={styles.goalTeaser} onPress={() => router.push('/goals')}>
+          <Ionicons name="flag-outline" size={18} color={colors.primary} />
+          <Text style={styles.goalTeaserText}>Stel een doel in</Text>
+          <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+        </Pressable>
+      )}
 
       {!data ? null : !data.hasData ? (
         <EmptyState
@@ -223,15 +267,20 @@ export default function ProgressScreen() {
                     Geen data voor deze oefening in deze periode.
                   </Text>
                 ) : (
-                  <LineChart points={strength} width={chartWidth} unit="kg" />
+                  <LineChart
+                    points={strength}
+                    width={chartWidth}
+                    unit="kg"
+                    targetValue={strengthTarget ?? undefined}
+                  />
                 )}
               </>
             )}
           </StatCard>
 
-          {/* Volume per spiergroep */}
+          {/* Reps per spiergroep */}
           <StatCard
-            title="Volume per spiergroep"
+            title="Reps per spiergroep"
             subtitle={`Laatste ${granularity === 'month' ? '12 maanden' : '5 jaar'}`}
           >
             {data.category.length === 0 ? (
@@ -309,5 +358,27 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: fontSize.sm,
     paddingVertical: spacing.sm,
+  },
+  rings: {
+    gap: spacing.lg,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.xs,
+  },
+  goalTeaser: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+  },
+  goalTeaserText: {
+    flex: 1,
+    color: colors.text,
+    fontSize: fontSize.md,
+    fontWeight: '600',
   },
 });

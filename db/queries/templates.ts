@@ -233,8 +233,11 @@ export function removeTemplateDayExercise(templateDayExerciseId: number): void {
 /**
  * Past een template toe op de week waarin `targetDate` valt. Kopieert per
  * template-dag de oefeningen naar de corresponderende weekdag en koppelt
- * `template_day_id` voor traceerbaarheid. Bestaande oefeningen van die dagen
- * worden overschreven.
+ * `template_day_id` voor traceerbaarheid.
+ *
+ * Bestaande oefeningen (en hun gelogde sets) blijven behouden: enkel
+ * oefeningen uit de template die nog niet op de dag staan worden toegevoegd.
+ * Zo wordt een actieve template aangevuld i.p.v. overschreven.
  */
 export function applyTemplateToWeek(templateId: number, targetDate: string): void {
   const template = getTemplateWithDays(templateId);
@@ -249,15 +252,10 @@ export function applyTemplateToWeek(templateId: number, targetDate: string): voi
       const date = weekDates[dateIndex];
       const day = getOrCreateWorkoutDay(date);
 
-      // Bestaande oefeningen van die dag wissen (soft-delete incl. hun sets).
+      // Bestaande oefeningen behouden; nieuwe template-oefeningen achteraan toevoegen.
       const existing = getWorkoutExercises(day.id);
-      for (const we of existing) {
-        db.runSync(
-          'UPDATE workout_sets SET deleted = 1 WHERE workout_exercise_id = ? AND deleted = 0',
-          [we.id]
-        );
-        db.runSync('UPDATE workout_exercises SET deleted = 1 WHERE id = ?', [we.id]);
-      }
+      const existingExerciseIds = new Set(existing.map((we) => we.exerciseId));
+      let nextOrder = existing.reduce((max, we) => Math.max(max, we.order + 1), 0);
 
       // Koppel de template-dag.
       db.runSync('UPDATE workout_days SET template_day_id = ?, is_rest_day = 0 WHERE id = ?', [
@@ -265,12 +263,15 @@ export function applyTemplateToWeek(templateId: number, targetDate: string): voi
         day.id,
       ]);
 
-      // Kopieer oefeningen, inclusief het geplande aantal sets.
+      // Enkel oefeningen toevoegen die er nog niet zijn (incl. gepland aantal sets).
       for (const ex of tDay.exercises) {
+        if (existingExerciseIds.has(ex.exerciseId)) continue;
         db.runSync(
           'INSERT INTO workout_exercises (workout_day_id, exercise_id, sort_order, planned_sets) VALUES (?, ?, ?, ?)',
-          [day.id, ex.exerciseId, ex.order, ex.sets]
+          [day.id, ex.exerciseId, nextOrder, ex.sets]
         );
+        existingExerciseIds.add(ex.exerciseId);
+        nextOrder += 1;
       }
     }
   });

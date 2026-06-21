@@ -140,7 +140,9 @@ export function ExerciseCard({
             ) : (
               <View />
             )}
-            <ProgressBadge previousSets={previousSets} currentSets={currentSets} />
+            {previousSets.length > 0 ? (
+              <ProgressBadge previousSets={previousSets} currentSets={currentSets} />
+            ) : null}
           </View>
         </>
       ) : null}

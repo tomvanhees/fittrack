@@ -2,15 +2,19 @@
 
 import {
   bucketsFor,
+  consistencyDeltaLabel,
   fillPeriods,
   formatNumberNL,
   formatVolumeFull,
   formatVolumeShort,
+  goalStanding,
   lastNMonths,
   lastNYears,
   maxValue,
   rangeStartISO,
+  strengthDeltaLabel,
   sumValues,
+  volumeDeltaLabel,
 } from '@/lib/stats';
 
 describe('stats helpers', () => {
@@ -69,5 +73,50 @@ describe('stats helpers', () => {
     expect(sumValues([1, 2, 3])).toBe(6);
     expect(maxValue([1, 5, 3])).toBe(5);
     expect(maxValue([])).toBe(0);
+  });
+});
+
+describe('doel-stand (goalStanding)', () => {
+  it('berekent een gedeeltelijke voortgang', () => {
+    const s = goalStanding(88, 100);
+    expect(s.pct).toBeCloseTo(0.88);
+    expect(s.remaining).toBe(12);
+    expect(s.reached).toBe(false);
+  });
+
+  it('klemt op 100% en remaining op 0 wanneer bereikt of voorbij', () => {
+    const exact = goalStanding(100, 100);
+    expect(exact.pct).toBe(1);
+    expect(exact.remaining).toBe(0);
+    expect(exact.reached).toBe(true);
+
+    const over = goalStanding(120, 100);
+    expect(over.pct).toBe(1);
+    expect(over.remaining).toBe(0);
+    expect(over.reached).toBe(true);
+  });
+
+  it('behandelt een target <= 0 als direct bereikt', () => {
+    const s = goalStanding(0, 0);
+    expect(s.pct).toBe(1);
+    expect(s.reached).toBe(true);
+  });
+});
+
+describe('doel-delta labels', () => {
+  it('toont resterende kracht en bereikt-status', () => {
+    expect(strengthDeltaLabel(12, false)).toBe('12 kg te gaan');
+    expect(strengthDeltaLabel(0, true)).toBe('Doel bereikt 🎉');
+  });
+
+  it('toont consistentie in hele workouts (afgerond omhoog)', () => {
+    expect(consistencyDeltaLabel(1, false)).toBe('1 workout te gaan');
+    expect(consistencyDeltaLabel(2.1, false)).toBe('3 workouts te gaan');
+    expect(consistencyDeltaLabel(0, true)).toBe('Doel bereikt 🎉');
+  });
+
+  it('toont resterend volume', () => {
+    expect(volumeDeltaLabel(12345, false)).toBe('12.345 kg te gaan');
+    expect(volumeDeltaLabel(0, true)).toBe('Doel bereikt 🎉');
   });
 });

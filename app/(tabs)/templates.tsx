@@ -10,7 +10,6 @@ import { EmptyState } from '@/components/shared/EmptyState';
 import {
   createTemplate,
   getAllTemplates,
-  weekHasExercises,
   type TemplateSummary,
 } from '@/db/queries/templates';
 import { useWorkoutStore } from '@/store/workoutStore';
@@ -39,22 +38,11 @@ export default function TemplatesScreen() {
       return;
     }
     const target = todayISO();
-    const apply = () => {
-      applyTemplate(template.id, target);
-      Alert.alert('Toegepast', `"${template.name}" is toegepast op deze week.`);
-    };
-    if (weekHasExercises(target)) {
-      Alert.alert(
-        'Week overschrijven?',
-        'Deze week bevat al oefeningen. De betrokken dagen worden overschreven.',
-        [
-          { text: 'Annuleer', style: 'cancel' },
-          { text: 'Overschrijf', style: 'destructive', onPress: apply },
-        ]
-      );
-    } else {
-      apply();
-    }
+    applyTemplate(template.id, target);
+    Alert.alert(
+      'Toegepast',
+      `"${template.name}" is toegepast op deze week. Bestaande oefeningen blijven behouden; nieuwe worden toegevoegd.`
+    );
   }
 
   return (

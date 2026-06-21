@@ -9,7 +9,7 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 
 /** Doelversie van het lokale schema. Verhoog dit bij elke nieuwe migratie. */
-export const SCHEMA_VERSION = 4;
+export const SCHEMA_VERSION = 6;
 
 /** Aantal sets dat een nieuwe template-oefening standaard krijgt. */
 export const DEFAULT_TEMPLATE_SETS = 3;
@@ -20,6 +20,23 @@ export const DEFAULT_TEMPLATE_SETS = 3;
  * conflicten deterministisch kan oplossen. Zie docs/SYNC_PLAN.md.
  */
 export const SYNCABLE_TABLES = [
+  'exercises',
+  'week_templates',
+  'template_days',
+  'template_day_exercises',
+  'workout_days',
+  'workout_exercises',
+  'workout_sets',
+  'goals',
+] as const;
+
+/**
+ * Tabellen die migratie 3 van sync-metadata voorzag. Dit is een bevroren
+ * momentopname: nieuwere syncbare tabellen (zoals `goals`) regelen hun eigen
+ * metadata in de migratie die ze aanmaakt. Zo blijft migratie 3 deterministisch
+ * en probeert ze nooit een tabel te wijzigen die op dat punt nog niet bestaat.
+ */
+const MIGRATION3_TABLES = [
   'exercises',
   'week_templates',
   'template_days',
@@ -119,7 +136,7 @@ function migration2(db: SQLiteDatabase): void {
 // ---------- Migratie 3: sync-metadata (local-first fundament) ----------
 
 function migration3(db: SQLiteDatabase): void {
-  for (const table of SYNCABLE_TABLES) {
+  for (const table of MIGRATION3_TABLES) {
     // Kolommen toevoegen (idempotent t.o.v. de columnExists-guard).
     if (!columnExists(db, table, 'uuid')) {
       db.execSync(`ALTER TABLE ${table} ADD COLUMN uuid TEXT`);
@@ -185,11 +202,75 @@ function migration4(db: SQLiteDatabase): void {
   `);
 }
 
+// ---------- Migratie 5: doelen (goals) ----------
+
+function migration5(db: SQLiteDatabase): void {
+  // type: 'strength' (max gewicht voor één oefening), 'consistency' (workouts
+  // per periode) of 'volume' (totaal getild per periode). exercise_id is enkel
+  // gevuld bij 'strength'; granularity ('month'|'year') enkel bij de
+  // periode-gebonden types. De tabel draagt meteen sync-metadata zodat ze in
+  // back-ups en toekomstige cloud-sync meegaat (zie SYNCABLE_TABLES).
+  db.execSync(`
+    CREATE TABLE IF NOT EXISTS goals (
+      id            INTEGER PRIMARY KEY AUTOINCREMENT,
+      type          TEXT NOT NULL,
+      exercise_id   INTEGER REFERENCES exercises(id),
+      target_value  REAL NOT NULL,
+      granularity   TEXT,
+      target_date   TEXT,
+      archived      INTEGER NOT NULL DEFAULT 0,
+      created_at    TEXT NOT NULL DEFAULT (date('now')),
+      uuid          TEXT,
+      updated_at    TEXT,
+      version       INTEGER NOT NULL DEFAULT 1,
+      deleted       INTEGER NOT NULL DEFAULT 0
+    );
+  `);
+
+  db.execSync(`UPDATE goals SET uuid = (${UUID_V4}) WHERE uuid IS NULL`);
+  db.execSync(`UPDATE goals SET updated_at = datetime('now') WHERE updated_at IS NULL`);
+  db.execSync(`CREATE UNIQUE INDEX IF NOT EXISTS idx_goals_uuid ON goals(uuid)`);
+  db.execSync(`CREATE INDEX IF NOT EXISTS idx_goals_updated_at ON goals(updated_at)`);
+
+  // Zelfde metadata-triggers als de tabellen uit migratie 3.
+  db.execSync(`
+    CREATE TRIGGER IF NOT EXISTS trg_goals_insert AFTER INSERT ON goals
+    BEGIN
+      UPDATE goals SET
+        uuid = COALESCE(NEW.uuid, (${UUID_V4})),
+        updated_at = COALESCE(NEW.updated_at, datetime('now'))
+      WHERE id = NEW.id;
+    END;
+  `);
+  db.execSync(`
+    CREATE TRIGGER IF NOT EXISTS trg_goals_update AFTER UPDATE ON goals
+    WHEN NEW.version = OLD.version
+    BEGIN
+      UPDATE goals SET
+        version = OLD.version + 1,
+        updated_at = datetime('now')
+      WHERE id = NEW.id;
+    END;
+  `);
+}
+
+// ---------- Migratie 6: rep-target voor krachtdoelen ----------
+
+function migration6(db: SQLiteDatabase): void {
+  // Optioneel aantal reps waarbij het krachtdoel telt (bv. "100 kg × 5").
+  // Leeg = elk aantal reps, identiek aan het gedrag vóór deze migratie.
+  if (!columnExists(db, 'goals', 'target_reps')) {
+    db.execSync('ALTER TABLE goals ADD COLUMN target_reps INTEGER');
+  }
+}
+
 const MIGRATIONS: Record<number, (db: SQLiteDatabase) => void> = {
   1: migration1,
   2: migration2,
   3: migration3,
   4: migration4,
+  5: migration5,
+  6: migration6,
 };
 
 /**

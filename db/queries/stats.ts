@@ -50,11 +50,11 @@ export interface CategoryVolumeRow {
   value: number;
 }
 
-/** Volume per spiergroep vanaf `sinceISO` (incl.). */
+/** Totaal aantal reps per spiergroep vanaf `sinceISO` (incl.). */
 export function getVolumeByCategory(sinceISO: string): CategoryVolumeRow[] {
   return db.getAllSync<CategoryVolumeRow>(
     `SELECT e.category AS category,
-            SUM(ws.weight * ws.reps) AS value
+            SUM(ws.reps) AS value
        FROM workout_sets ws
        JOIN workout_exercises we ON we.id = ws.workout_exercise_id
        JOIN workout_days wd ON wd.id = we.workout_day_id
