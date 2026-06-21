@@ -19,10 +19,10 @@ import { StatCard } from '@/components/progress/StatCard';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { colors, fontSize, radius, spacing } from '@/constants/colors';
 import {
+  getSetsByCategory,
   getStrengthProgression,
   getTrackedExercises,
   getTrainingDaysByPeriod,
-  getVolumeByCategory,
   getVolumeByPeriod,
   hasAnyLoggedSets,
   type TrackedExercise,
@@ -79,7 +79,7 @@ export default function ProgressScreen() {
         hasData: true,
         consistency: fillPeriods(buckets, getTrainingDaysByPeriod(g)),
         volume: fillPeriods(buckets, getVolumeByPeriod(g)),
-        category: getVolumeByCategory(sinceISO),
+        category: getSetsByCategory(sinceISO),
         exercises,
         sinceISO,
       });
@@ -229,9 +229,9 @@ export default function ProgressScreen() {
             )}
           </StatCard>
 
-          {/* Volume per spiergroep */}
+          {/* Sets per spiergroep */}
           <StatCard
-            title="Volume per spiergroep"
+            title="Sets per spiergroep"
             subtitle={`Laatste ${granularity === 'month' ? '12 maanden' : '5 jaar'}`}
           >
             {data.category.length === 0 ? (
