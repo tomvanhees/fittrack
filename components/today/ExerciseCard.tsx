@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Swipeable } from 'react-native-gesture-handler';
 import { SetRow } from './SetRow';
 import { ProgressBadge } from './ProgressBadge';
+import { RecordBadge } from './RecordBadge';
 import { categoryColor } from '@/constants/categories';
 import { colors, fontSize, radius, shadow, spacing } from '@/constants/colors';
 import type { ExerciseWithSets, WorkoutSet } from '@/types';
@@ -35,7 +36,8 @@ export function ExerciseCard({
   const [collapsed, setCollapsed] = useState(false);
   const [extraRows, setExtraRows] = useState(0);
 
-  const { exercise, previousSets, currentSets, workoutExerciseId, plannedSets } = data;
+  const { exercise, previousSets, currentSets, workoutExerciseId, plannedSets, priorBest1RM } =
+    data;
 
   const baseRows = Math.max(previousSets.length, currentSets.length, plannedSets ?? 0, 1);
   const rowCount = baseRows + extraRows;
@@ -115,6 +117,7 @@ export function ExerciseCard({
             <Text style={[styles.colLabel, styles.colSet]} />
             <Text style={[styles.colLabel, styles.colPrev]}>Vorige</Text>
             <Text style={[styles.colLabel, styles.colNew]}>Nieuw</Text>
+            <Text style={[styles.colLabel, styles.colRpe]}>RPE</Text>
           </View>
 
           {rows.map((r) => (
@@ -124,8 +127,8 @@ export function ExerciseCard({
               previousSet={r.previousSet}
               currentSet={r.currentSet}
               editable={editable}
-              onSave={(weight, reps) =>
-                onSaveSet(workoutExerciseId, { setNumber: r.setNumber, weight, reps })
+              onSave={(weight, reps, rpe) =>
+                onSaveSet(workoutExerciseId, { setNumber: r.setNumber, weight, reps, rpe })
               }
               onRemove={editable ? () => handleRemoveSet(r.setNumber) : undefined}
             />
@@ -140,7 +143,10 @@ export function ExerciseCard({
             ) : (
               <View />
             )}
-            <ProgressBadge previousSets={previousSets} currentSets={currentSets} />
+            <View style={styles.badges}>
+              <RecordBadge currentSets={currentSets} priorBest1RM={priorBest1RM} />
+              <ProgressBadge previousSets={previousSets} currentSets={currentSets} />
+            </View>
           </View>
         </>
       ) : null}
@@ -204,6 +210,15 @@ const styles = StyleSheet.create({
   colSet: { width: 26 },
   colPrev: { width: 72 },
   colNew: { flex: 1 },
+  colRpe: { width: 56, textAlign: 'center' },
+  badges: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    flexShrink: 1,
+    flexWrap: 'wrap',
+    justifyContent: 'flex-end',
+  },
   footer: {
     flexDirection: 'row',
     alignItems: 'center',

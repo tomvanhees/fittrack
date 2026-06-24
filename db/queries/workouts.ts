@@ -2,6 +2,7 @@
 
 import { db } from '../schema';
 import { getExerciseById } from './exercises';
+import { getBestEstimated1RMBefore } from './stats';
 import type {
   ExerciseWithSets,
   WorkoutDay,
@@ -17,6 +18,7 @@ interface WorkoutDayRow {
   template_day_id: number | null;
   is_rest_day: number;
   completed_at: string | null;
+  notes: string | null;
 }
 
 interface WorkoutExerciseRow {
@@ -33,6 +35,7 @@ interface WorkoutSetRow {
   set_number: number;
   weight: number;
   reps: number;
+  rpe: number | null;
   completed_at: string;
 }
 
@@ -43,6 +46,7 @@ function mapDay(row: WorkoutDayRow): WorkoutDay {
     templateDayId: row.template_day_id ?? undefined,
     isRestDay: row.is_rest_day === 1,
     completedAt: row.completed_at ?? undefined,
+    notes: row.notes ?? undefined,
   };
 }
 
@@ -63,6 +67,7 @@ function mapSet(row: WorkoutSetRow): WorkoutSet {
     setNumber: row.set_number,
     weight: row.weight,
     reps: row.reps,
+    rpe: row.rpe ?? undefined,
     completedAt: row.completed_at,
   };
 }
@@ -113,6 +118,23 @@ export function completeWorkout(date: string): void {
 
 export function reopenWorkout(date: string): void {
   db.runSync('UPDATE workout_days SET completed_at = NULL WHERE date = ?', [date]);
+}
+
+export function getWorkoutNotes(date: string): string {
+  const row = db.getFirstSync<{ notes: string | null }>(
+    'SELECT notes FROM workout_days WHERE date = ?',
+    [date]
+  );
+  return row?.notes ?? '';
+}
+
+export function setWorkoutNotes(date: string, notes: string): void {
+  const day = getOrCreateWorkoutDay(date);
+  const trimmed = notes.trim();
+  db.runSync('UPDATE workout_days SET notes = ? WHERE id = ?', [
+    trimmed.length > 0 ? trimmed : null,
+    day.id,
+  ]);
 }
 
 // ---------- Workout exercises ----------
@@ -189,19 +211,20 @@ export function getSetById(id: number): WorkoutSet | null {
 }
 
 /**
- * Werkt gewicht/reps van een set bij en ververst de timestamp.
+ * Werkt gewicht/reps/rpe van een set bij en ververst de timestamp.
  */
 export function updateSet(
   setId: number,
-  values: { weight?: number; reps?: number }
+  values: { weight?: number; reps?: number; rpe?: number | null }
 ): void {
   const current = getSetById(setId);
   if (!current) return;
   const weight = values.weight ?? current.weight;
   const reps = values.reps ?? current.reps;
+  const rpe = values.rpe !== undefined ? values.rpe : (current.rpe ?? null);
   db.runSync(
-    "UPDATE workout_sets SET weight = ?, reps = ?, completed_at = datetime('now') WHERE id = ?",
-    [weight, reps, setId]
+    "UPDATE workout_sets SET weight = ?, reps = ?, rpe = ?, completed_at = datetime('now') WHERE id = ?",
+    [weight, reps, rpe, setId]
   );
 }
 
@@ -218,8 +241,10 @@ export function upsertSet(
   workoutExerciseId: number,
   setNumber: number,
   weight: number,
-  reps: number
+  reps: number,
+  rpe?: number | null
 ): WorkoutSet {
+  const rpeValue = rpe ?? null;
   const existing = db.getFirstSync<WorkoutSetRow>(
     'SELECT * FROM workout_sets WHERE workout_exercise_id = ? AND set_number = ?',
     [workoutExerciseId, setNumber]
@@ -227,14 +252,14 @@ export function upsertSet(
   if (existing) {
     // deleted = 0 herstelt een eventueel hergebruikt tombstone-setnummer.
     db.runSync(
-      "UPDATE workout_sets SET weight = ?, reps = ?, deleted = 0, completed_at = datetime('now') WHERE id = ?",
-      [weight, reps, existing.id]
+      "UPDATE workout_sets SET weight = ?, reps = ?, rpe = ?, deleted = 0, completed_at = datetime('now') WHERE id = ?",
+      [weight, reps, rpeValue, existing.id]
     );
     return getSetById(existing.id)!;
   }
   const result = db.runSync(
-    'INSERT INTO workout_sets (workout_exercise_id, set_number, weight, reps) VALUES (?, ?, ?, ?)',
-    [workoutExerciseId, setNumber, weight, reps]
+    'INSERT INTO workout_sets (workout_exercise_id, set_number, weight, reps, rpe) VALUES (?, ?, ?, ?, ?)',
+    [workoutExerciseId, setNumber, weight, reps, rpeValue]
   );
   return getSetById(result.lastInsertRowId)!;
 }
@@ -286,12 +311,14 @@ export function getWorkoutWithSets(date: string): ExerciseWithSets[] {
   for (const we of workoutExercises) {
     const exercise = getExerciseById(we.exerciseId);
     if (!exercise) continue;
+    const priorBest1RM = getBestEstimated1RMBefore(we.exerciseId, date);
     result.push({
       workoutExerciseId: we.id,
       exercise,
       previousSets: getPreviousSets(we.exerciseId, date),
       currentSets: getSetsForWorkoutExercise(we.id),
       plannedSets: we.plannedSets,
+      priorBest1RM: priorBest1RM > 0 ? priorBest1RM : undefined,
     });
   }
 

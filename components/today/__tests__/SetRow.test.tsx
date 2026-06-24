@@ -35,7 +35,19 @@ describe('<SetRow />', () => {
     fireEvent.changeText(screen.getByLabelText('Gewicht set 1'), '85');
     fireEvent.changeText(screen.getByLabelText('Reps set 1'), '6');
     fireEvent(screen.getByLabelText('Reps set 1'), 'blur');
-    expect(onSave).toHaveBeenCalledWith(85, 6);
+    expect(onSave).toHaveBeenCalledWith(85, 6, undefined);
+  });
+
+  it('geeft de RPE mee wanneer die is ingevuld', () => {
+    const onSave = jest.fn();
+    render(
+      <SetRow setNumber={1} previousSet={previousSet} editable onSave={onSave} />
+    );
+    fireEvent.changeText(screen.getByLabelText('Gewicht set 1'), '85');
+    fireEvent.changeText(screen.getByLabelText('Reps set 1'), '6');
+    fireEvent.changeText(screen.getByLabelText('RPE set 1'), '8');
+    fireEvent(screen.getByLabelText('RPE set 1'), 'blur');
+    expect(onSave).toHaveBeenCalledWith(85, 6, 8);
   });
 
   it('slaat niets op wanneer beide velden leeg blijven', () => {

@@ -79,6 +79,20 @@ export default function SettingsScreen() {
         </Pressable>
       </View>
 
+      <Text style={styles.sectionTitle}>Lichaam</Text>
+      <View style={styles.card}>
+        <Pressable style={styles.action} onPress={() => router.push('/body')}>
+          <Ionicons name="body-outline" size={20} color={colors.primary} />
+          <View style={styles.actionBody}>
+            <Text style={styles.actionTitle}>Lichaamsgewicht</Text>
+            <Text style={styles.actionSubtitle}>
+              Log je gewicht en volg het verloop in een grafiek.
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+        </Pressable>
+      </View>
+
       <Text style={styles.sectionTitle}>Gegevens</Text>
       <View style={styles.card}>
         <Pressable style={styles.action} onPress={handleExport} disabled={exporting}>

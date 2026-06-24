@@ -12,7 +12,7 @@ interface SetRowProps {
   previousSet?: WorkoutSet;
   currentSet?: WorkoutSet;
   editable: boolean;
-  onSave: (weight: number, reps: number) => void;
+  onSave: (weight: number, reps: number, rpe?: number) => void;
   onRemove?: () => void;
 }
 
@@ -31,19 +31,26 @@ export function SetRow({
 }: SetRowProps) {
   const [weight, setWeight] = useState(numToStr(currentSet?.weight));
   const [reps, setReps] = useState(numToStr(currentSet?.reps));
+  const [rpe, setRpe] = useState(numToStr(currentSet?.rpe));
 
   // Sync wanneer de onderliggende set verandert (bv. na reload).
   useEffect(() => {
     setWeight(numToStr(currentSet?.weight));
     setReps(numToStr(currentSet?.reps));
-  }, [currentSet?.id, currentSet?.weight, currentSet?.reps]);
+    setRpe(numToStr(currentSet?.rpe));
+  }, [currentSet?.id, currentSet?.weight, currentSet?.reps, currentSet?.rpe]);
 
   function commit() {
     const w = parseFloat(weight);
     const r = parseInt(reps, 10);
+    const rpeNum = parseFloat(rpe);
     // Sla enkel op als er iets ingevuld is.
-    if (weight === '' && reps === '') return;
-    onSave(Number.isFinite(w) ? w : 0, Number.isFinite(r) ? r : 0);
+    if (weight === '' && reps === '' && rpe === '') return;
+    onSave(
+      Number.isFinite(w) ? w : 0,
+      Number.isFinite(r) ? r : 0,
+      Number.isFinite(rpeNum) ? rpeNum : undefined
+    );
   }
 
   const prevLabel = previousSet
@@ -78,6 +85,16 @@ export function SetRow({
         style={styles.input}
         accessibilityLabel={`Reps set ${setNumber}`}
       />
+      <NumberInput
+        value={rpe}
+        onChangeNumber={setRpe}
+        onBlur={commit}
+        editable={editable}
+        allowDecimal
+        placeholder={previousSet?.rpe ? String(previousSet.rpe) : 'RPE'}
+        style={styles.rpeInput}
+        accessibilityLabel={`RPE set ${setNumber}`}
+      />
 
       {editable && onRemove ? (
         <Pressable onPress={onRemove} hitSlop={8} style={styles.remove}>
@@ -110,6 +127,11 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
+  },
+  rpeInput: {
+    width: 56,
+    minWidth: 48,
+    flexGrow: 0,
   },
   times: {
     color: colors.textFaint,

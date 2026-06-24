@@ -1,7 +1,7 @@
 // app/(tabs)/today.tsx
 
-import { useCallback } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -18,7 +18,9 @@ export default function TodayScreen() {
     todayDate,
     todayExercises,
     todayCompletedAt,
+    todayNotes,
     loadToday,
+    saveTodayNotes,
     saveSet,
     removeSet,
     removeExerciseFromToday,
@@ -26,12 +28,19 @@ export default function TodayScreen() {
     reopenTodayWorkout,
   } = useWorkoutStore();
 
+  const [notesDraft, setNotesDraft] = useState(todayNotes);
+
   useFocusEffect(
     useCallback(() => {
       // Zorg dat "vandaag" altijd de echte huidige dag is bij terugkeer.
       loadToday(todayISO());
     }, [loadToday])
   );
+
+  // Houd het lokale tekstveld in sync met de store (bv. na een dag-wissel).
+  useEffect(() => {
+    setNotesDraft(todayNotes);
+  }, [todayNotes, todayDate]);
 
   const isCompleted = !!todayCompletedAt;
   const count = todayExercises.length;
@@ -120,6 +129,24 @@ export default function TodayScreen() {
             <Text style={styles.addExerciseText}>Oefening toevoegen</Text>
           </Pressable>
         ) : null}
+
+        {count > 0 ? (
+          <View style={styles.notesCard}>
+            <Text style={styles.notesLabel}>Notities</Text>
+            <TextInput
+              style={styles.notesInput}
+              value={notesDraft}
+              onChangeText={setNotesDraft}
+              onBlur={() => {
+                if (notesDraft.trim() !== todayNotes.trim()) saveTodayNotes(notesDraft);
+              }}
+              placeholder="Hoe voelde de training? Blessures, energie, …"
+              placeholderTextColor={colors.textFaint}
+              multiline
+              editable={!isCompleted}
+            />
+          </View>
+        ) : null}
       </ScrollView>
       </KeyboardAvoider>
 
@@ -202,6 +229,27 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontSize: fontSize.md,
     fontWeight: '700',
+  },
+  notesCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.md,
+    gap: spacing.xs,
+  },
+  notesLabel: {
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  notesInput: {
+    color: colors.text,
+    fontSize: fontSize.md,
+    minHeight: 44,
+    textAlignVertical: 'top',
   },
   footer: {
     position: 'absolute',

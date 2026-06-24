@@ -38,6 +38,7 @@ export interface WorkoutDay {
   templateDayId?: number;   // Optioneel: gekoppeld aan template
   isRestDay: boolean;
   completedAt?: string;     // Ingevuld wanneer workout afgerond
+  notes?: string;           // Vrije notities bij deze dag
 }
 
 export interface WorkoutExercise {
@@ -54,7 +55,17 @@ export interface WorkoutSet {
   setNumber: number;        // 1, 2, 3, ...
   weight: number;           // kg
   reps: number;
+  rpe?: number;             // Rate of Perceived Exertion (1–10), optioneel
   completedAt: string;      // ISO timestamp
+}
+
+// Lichaamsmeting (gewicht/vetpercentage) per dag — voor de Lichaam-grafiek.
+export interface BodyMetric {
+  id: number;
+  date: string;             // ISO datum, uniek per dag
+  weight: number;           // kg
+  bodyFat?: number;         // optioneel vetpercentage
+  note?: string;            // optionele notitie
 }
 
 // Samengesteld type voor Today screen
@@ -64,6 +75,7 @@ export interface ExerciseWithSets {
   previousSets: WorkoutSet[];   // Sets van vorige sessie
   currentSets: WorkoutSet[];    // Sets van vandaag (kan leeg zijn)
   plannedSets?: number;         // Aantal voorgevulde rijen (uit template)
+  priorBest1RM?: number;        // Beste geschatte 1RM vóór vandaag (PR-detectie)
 }
 
 // Progressie-resultaat voor de ProgressBadge
