@@ -12,12 +12,14 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LineChart } from '@/components/progress/LineChart';
 import { NumberInput } from '@/components/shared/NumberInput';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { KeyboardAvoider } from '@/components/shared/KeyboardAvoider';
+import { ScreenHeader } from '@/components/shared/ScreenHeader';
+import { useAccent } from '@/store/prefsStore';
 import {
   deleteBodyMetric,
   getBodyMetricByDate,
@@ -30,6 +32,7 @@ import type { BodyMetric } from '@/types';
 
 export default function BodyScreen() {
   const insets = useSafeAreaInsets();
+  const { accent } = useAccent();
   const { width } = useWindowDimensions();
   const chartWidth = width - spacing.lg * 2 - spacing.lg * 2;
 
@@ -75,12 +78,19 @@ export default function BodyScreen() {
   const latest = metrics.length > 0 ? metrics[metrics.length - 1] : null;
 
   return (
-    <KeyboardAvoider style={styles.screen}>
-      <ScrollView
-        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + spacing.xl }]}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-      >
+    <View style={styles.screen}>
+      <ScreenHeader
+        kicker="Lichaam"
+        title="Lichaamsgewicht"
+        accent={accent}
+        onBack={() => router.back()}
+      />
+      <KeyboardAvoider style={styles.flex}>
+        <ScrollView
+          contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + spacing.xl }]}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
         {/* Invoer voor vandaag */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Vandaag</Text>
@@ -130,8 +140,9 @@ export default function BodyScreen() {
             ))}
           </View>
         ) : null}
-      </ScrollView>
-    </KeyboardAvoider>
+        </ScrollView>
+      </KeyboardAvoider>
+    </View>
   );
 }
 
@@ -139,6 +150,9 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  flex: {
+    flex: 1,
   },
   content: {
     padding: spacing.lg,
