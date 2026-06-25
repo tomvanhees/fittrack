@@ -1,10 +1,9 @@
 // components/progress/CategoryBars.tsx
-// Horizontale staven voor volume per spiergroep — opgebouwd uit Views.
+// Horizontale staven voor het aantal sets per spiergroep — opgebouwd uit Views.
 
 import { StyleSheet, Text, View } from 'react-native';
 import { categoryColor, categoryLabel } from '@/constants/categories';
 import { colors, fonts, fontSize, radius, spacing } from '@/constants/colors';
-import { formatVolumeShort } from '@/lib/stats';
 import type { Category } from '@/types';
 
 export interface CategoryDatum {
@@ -37,7 +36,7 @@ export function CategoryBars({ data }: CategoryBarsProps) {
               ]}
             />
           </View>
-          <Text style={styles.value}>{formatVolumeShort(d.value)}</Text>
+          <Text style={styles.value}>{d.value}</Text>
         </View>
       ))}
     </View>

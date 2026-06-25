@@ -45,16 +45,16 @@ export function getVolumeByPeriod(granularity: Granularity): PeriodRow[] {
   );
 }
 
-export interface CategoryVolumeRow {
+export interface CategorySetsRow {
   category: Category;
   value: number;
 }
 
-/** Totaal aantal reps per spiergroep vanaf `sinceISO` (incl.). */
-export function getVolumeByCategory(sinceISO: string): CategoryVolumeRow[] {
-  return db.getAllSync<CategoryVolumeRow>(
+/** Aantal gelogde sets per spiergroep vanaf `sinceISO` (incl.). */
+export function getSetsByCategory(sinceISO: string): CategorySetsRow[] {
+  return db.getAllSync<CategorySetsRow>(
     `SELECT e.category AS category,
-            SUM(ws.reps) AS value
+            COUNT(ws.id) AS value
        FROM workout_sets ws
        JOIN workout_exercises we ON we.id = ws.workout_exercise_id
        JOIN workout_days wd ON wd.id = we.workout_day_id
