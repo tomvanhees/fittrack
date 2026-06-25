@@ -15,7 +15,7 @@ interface SetRowProps {
   currentSet?: WorkoutSet;
   editable: boolean;
   accent: string;
-  onSave: (weight: number, reps: number) => void;
+  onSave: (weight: number, reps: number, rpe?: number) => void;
   onRemove?: () => void;
 }
 
@@ -35,18 +35,26 @@ export function SetRow({
 }: SetRowProps) {
   const [weight, setWeight] = useState(numToStr(currentSet?.weight));
   const [reps, setReps] = useState(numToStr(currentSet?.reps));
+  const [rpe, setRpe] = useState(numToStr(currentSet?.rpe));
 
   // Sync wanneer de onderliggende set verandert (bv. na reload).
   useEffect(() => {
     setWeight(numToStr(currentSet?.weight));
     setReps(numToStr(currentSet?.reps));
-  }, [currentSet?.id, currentSet?.weight, currentSet?.reps]);
+    setRpe(numToStr(currentSet?.rpe));
+  }, [currentSet?.id, currentSet?.weight, currentSet?.reps, currentSet?.rpe]);
 
   function commit() {
     const w = parseFloat(weight);
     const r = parseInt(reps, 10);
-    if (weight === '' && reps === '') return;
-    onSave(Number.isFinite(w) ? w : 0, Number.isFinite(r) ? r : 0);
+    const rpeNum = parseFloat(rpe);
+    // Sla enkel op als er iets ingevuld is.
+    if (weight === '' && reps === '' && rpe === '') return;
+    onSave(
+      Number.isFinite(w) ? w : 0,
+      Number.isFinite(r) ? r : 0,
+      Number.isFinite(rpeNum) ? rpeNum : undefined
+    );
   }
 
   const hasWeight = weight !== '' && parseFloat(weight) > 0;
@@ -89,6 +97,17 @@ export function SetRow({
           placeholderTextColor={colors.textPlaceholder}
           style={[styles.input, styles.inputReps, hasReps && { color: colors.text }]}
           accessibilityLabel={`Reps set ${setNumber}`}
+        />
+        <NumberInput
+          value={rpe}
+          onChangeNumber={setRpe}
+          onBlur={commit}
+          editable={editable}
+          allowDecimal
+          placeholder="RPE"
+          placeholderTextColor={colors.textPlaceholder}
+          style={[styles.input, styles.inputRpe, rpe !== '' && { color: colors.textMuted }]}
+          accessibilityLabel={`RPE set ${setNumber}`}
         />
       </View>
 
@@ -150,6 +169,11 @@ const styles = StyleSheet.create({
   },
   inputWeight: { width: 64 },
   inputReps: { width: 38 },
+  inputRpe: {
+    width: 48,
+    fontSize: 14,
+    color: colors.textFaint,
+  },
   unit: {
     fontSize: 13,
     color: colors.textFaint,

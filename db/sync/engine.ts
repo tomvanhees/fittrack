@@ -57,7 +57,7 @@ const SYNC_TABLES: SyncTable[] = [
   },
   {
     table: 'workout_days',
-    columns: ['date', 'completed_at'],
+    columns: ['date', 'completed_at', 'notes'],
     bools: ['is_rest_day'],
     fks: [{ local: 'template_day_id', remote: 'template_day_uuid', parent: 'template_days' }],
   },
@@ -72,7 +72,7 @@ const SYNC_TABLES: SyncTable[] = [
   },
   {
     table: 'workout_sets',
-    columns: ['set_number', 'weight', 'reps', 'completed_at'],
+    columns: ['set_number', 'weight', 'reps', 'rpe', 'completed_at'],
     bools: [],
     fks: [
       {
@@ -81,6 +81,13 @@ const SYNC_TABLES: SyncTable[] = [
         parent: 'workout_exercises',
       },
     ],
+  },
+  // Lichaamsmetingen — geen FK's; syncen op uuid net als de rest.
+  {
+    table: 'body_metrics',
+    columns: ['date', 'weight', 'body_fat', 'note'],
+    bools: [],
+    fks: [],
   },
 ];
 

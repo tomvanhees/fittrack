@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { getExerciseById, deleteCustomExercise } from '@/db/queries/exercises';
 import { getExerciseHistory } from '@/db/queries/workouts';
+import { getExerciseRecords } from '@/db/queries/stats';
 import { ScreenHeader } from '@/components/shared/ScreenHeader';
 import { SolidButton } from '@/components/shared/Button';
 import { useWorkoutStore } from '@/store/workoutStore';
@@ -22,6 +23,26 @@ export default function ExerciseDetailModal() {
 
   const exercise = useMemo(() => getExerciseById(exerciseId), [exerciseId]);
   const history = useMemo(() => getExerciseHistory(exerciseId, 5), [exerciseId]);
+  const records = useMemo(() => getExerciseRecords(exerciseId), [exerciseId]);
+
+  const fmt = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1));
+  const recordItems = [
+    records.bestEstimated1RM && {
+      label: 'Geschat 1RM',
+      value: `${Math.round(records.bestEstimated1RM.value)} kg`,
+      sub: `${fmt(records.bestEstimated1RM.weight)}kg × ${records.bestEstimated1RM.reps}`,
+    },
+    records.maxWeight && {
+      label: 'Zwaarste set',
+      value: `${fmt(records.maxWeight.weight)} kg`,
+      sub: `× ${records.maxWeight.reps}`,
+    },
+    records.bestSetVolume && {
+      label: 'Beste setvolume',
+      value: `${Math.round(records.bestSetVolume.value)} kg`,
+      sub: `${fmt(records.bestSetVolume.weight)}kg × ${records.bestSetVolume.reps}`,
+    },
+  ].filter(Boolean) as { label: string; value: string; sub: string }[];
 
   if (!exercise) {
     return (
@@ -77,6 +98,22 @@ export default function ExerciseDetailModal() {
         onPress={handleAddToToday}
       />
 
+      {recordItems.length > 0 ? (
+        <>
+          <Text style={styles.sectionTitle}>Records</Text>
+          <View style={styles.recordsRow}>
+            {recordItems.map((r) => (
+              <View key={r.label} style={styles.recordCard}>
+                <Ionicons name="trophy" size={16} color={colors.secondary} />
+                <Text style={styles.recordValue}>{r.value}</Text>
+                <Text style={styles.recordLabel}>{r.label}</Text>
+                <Text style={styles.recordSub}>{r.sub}</Text>
+              </View>
+            ))}
+          </View>
+        </>
+      ) : null}
+
       <Text style={styles.sectionTitle}>Recente sessies</Text>
 
       {history.length === 0 ? (
@@ -95,6 +132,7 @@ export default function ExerciseDetailModal() {
                 <View key={s.id} style={styles.setPill}>
                   <Text style={styles.setPillText}>
                     {s.weight}kg × {s.reps}
+                    {s.rpe ? ` @${s.rpe}` : ''}
                   </Text>
                 </View>
               ))}
@@ -140,6 +178,35 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: fontSize.md,
     fontStyle: 'italic',
+  },
+  recordsRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  recordCard: {
+    flex: 1,
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.md,
+    gap: 2,
+  },
+  recordValue: {
+    color: colors.text,
+    fontSize: fontSize.lg,
+    fontWeight: '800',
+    marginTop: 2,
+  },
+  recordLabel: {
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+  },
+  recordSub: {
+    color: colors.textFaint,
+    fontSize: fontSize.xs,
   },
   sessionCard: {
     backgroundColor: colors.surface,

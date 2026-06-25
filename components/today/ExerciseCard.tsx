@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Swipeable } from 'react-native-gesture-handler';
 import { SetRow } from './SetRow';
 import { ProgressBadge } from './ProgressBadge';
+import { RecordBadge } from './RecordBadge';
 import { SolidButton } from '@/components/shared/Button';
 import { useRestTimerStore } from '@/store/restTimerStore';
 import { categoryColor } from '@/constants/categories';
@@ -41,7 +42,8 @@ export function ExerciseCard({
   const [expanded, setExpanded] = useState(defaultExpanded);
   const startRest = useRestTimerStore((s) => s.start);
 
-  const { exercise, previousSets, currentSets, workoutExerciseId, plannedSets } = data;
+  const { exercise, previousSets, currentSets, workoutExerciseId, plannedSets, priorBest1RM } =
+    data;
   const barColor = categoryColor(exercise.category);
 
   const baseRows = Math.max(previousSets.length, currentSets.length, plannedSets ?? 0, 1);
@@ -108,6 +110,7 @@ export function ExerciseCard({
                   <Ionicons name="timer-outline" size={21} color={accent} />
                 </Pressable>
               ) : null}
+              <RecordBadge currentSets={currentSets} priorBest1RM={priorBest1RM} />
               <ProgressBadge previousSets={previousSets} currentSets={currentSets} accent={accent} />
             </>
           ) : (
@@ -126,8 +129,8 @@ export function ExerciseCard({
                   currentSet={r.currentSet}
                   editable={editable}
                   accent={accent}
-                  onSave={(weight, reps) =>
-                    onSaveSet(workoutExerciseId, { setNumber: r.setNumber, weight, reps })
+                  onSave={(weight, reps, rpe) =>
+                    onSaveSet(workoutExerciseId, { setNumber: r.setNumber, weight, reps, rpe })
                   }
                   onRemove={editable ? () => handleRemoveSet(r.setNumber) : undefined}
                 />

@@ -31,6 +31,7 @@ remote-versie toepassen **zonder** een nieuwe lokale wijziging te triggeren.
 ```
 exercises → week_templates → template_days → template_day_exercises
 → workout_days → workout_exercises → workout_sets
+body_metrics (geen FK's; sinds schema v5)
 ```
 
 ---
@@ -89,7 +90,7 @@ Eén tabel per lokale tabel, met `user_id` voor isolatie. `uuid` is de primaire
 sleutel; FK's verwijzen naar de **uuid** van de ouder (niet naar lokale int-id's).
 
 ```sql
--- voorbeeld voor twee tabellen; herhaal het patroon voor alle 7
+-- voorbeeld voor twee tabellen; herhaal het patroon voor elke syncbare tabel
 create table exercises (
   uuid        uuid primary key,
   user_id     uuid not null references auth.users(id) on delete cascade,
@@ -116,6 +117,33 @@ create table workout_sets (
 create index on exercises (user_id, updated_at);
 create index on workout_sets (user_id, updated_at);
 ```
+
+> **Schema v5 (RPE, dag-notities, lichaamsmetingen).** De lokale migratie 5
+> voegt `workout_sets.rpe` (real, nullable) en `workout_days.notes` (text,
+> nullable) toe en introduceert een nieuwe syncbare tabel `body_metrics`. De
+> sync-engine (`db/sync/engine.ts`) verstuurt deze velden al. **Voor het remote
+> backend live gaat** moet het Postgres-schema bijgewerkt worden, anders falen
+> push/pull voor die kolommen/tabel:
+>
+> ```sql
+> alter table workout_sets add column rpe real;
+> alter table workout_days add column notes text;
+>
+> create table body_metrics (
+>   uuid        uuid primary key,
+>   user_id     uuid not null references auth.users(id) on delete cascade,
+>   date        text not null,
+>   weight      real,
+>   body_fat    real,
+>   note        text,
+>   version     integer not null default 1,
+>   deleted     boolean not null default false,
+>   updated_at  timestamptz not null default now()
+> );
+> create unique index on body_metrics (user_id, date);
+> create index on body_metrics (user_id, updated_at);
+> -- RLS-policy "own rows" zoals hieronder, ook voor body_metrics.
+> ```
 
 ### Row Level Security (verplicht)
 

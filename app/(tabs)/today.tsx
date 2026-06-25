@@ -1,7 +1,7 @@
 // app/(tabs)/today.tsx
 
-import { useCallback, useMemo, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Alert, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -16,7 +16,7 @@ import { useWorkoutStore } from '@/store/workoutStore';
 import { useAccent } from '@/store/prefsStore';
 import { todayISO, formatLongDate } from '@/lib/date';
 import { formatVolumeCompact } from '@/lib/stats';
-import { colors } from '@/constants/colors';
+import { colors, fontSize, radius, spacing } from '@/constants/colors';
 import type { ExerciseWithSets } from '@/types';
 
 function summarize(exercises: ExerciseWithSets[]): { done: number; total: number; volume: number } {
@@ -47,7 +47,9 @@ export default function TodayScreen() {
     todayExercises,
     todayCompletedAt,
     todaySessionLabel,
+    todayNotes,
     loadToday,
+    saveTodayNotes,
     saveSet,
     removeSet,
     removeExerciseFromToday,
@@ -55,12 +57,19 @@ export default function TodayScreen() {
     reopenTodayWorkout,
   } = useWorkoutStore();
 
+  const [notesDraft, setNotesDraft] = useState(todayNotes);
+
   useFocusEffect(
     useCallback(() => {
       // Zorg dat "vandaag" altijd de echte huidige dag is bij terugkeer.
       loadToday(todayISO());
     }, [loadToday])
   );
+
+  // Houd het lokale tekstveld in sync met de store (bv. na een dag-wissel).
+  useEffect(() => {
+    setNotesDraft(todayNotes);
+  }, [todayNotes, todayDate]);
 
   const isCompleted = !!todayCompletedAt;
   const count = todayExercises.length;
@@ -143,6 +152,24 @@ export default function TodayScreen() {
                 }
               />
             ) : null}
+
+            {count > 0 ? (
+              <View style={styles.notesCard}>
+                <Text style={styles.notesLabel}>Notities</Text>
+                <TextInput
+                  style={styles.notesInput}
+                  value={notesDraft}
+                  onChangeText={setNotesDraft}
+                  onBlur={() => {
+                    if (notesDraft.trim() !== todayNotes.trim()) saveTodayNotes(notesDraft);
+                  }}
+                  placeholder="Hoe voelde de training? Blessures, energie, …"
+                  placeholderTextColor={colors.textFaint}
+                  multiline
+                  editable={!isCompleted}
+                />
+              </View>
+            ) : null}
           </View>
         </ScrollView>
       </KeyboardAvoider>
@@ -188,6 +215,27 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 20,
     gap: 14,
+  },
+  notesCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.md,
+    gap: spacing.xs,
+  },
+  notesLabel: {
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  notesInput: {
+    color: colors.text,
+    fontSize: fontSize.md,
+    minHeight: 44,
+    textAlignVertical: 'top',
   },
   footer: {
     position: 'absolute',

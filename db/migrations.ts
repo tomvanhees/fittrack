@@ -9,7 +9,7 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 
 /** Doelversie van het lokale schema. Verhoog dit bij elke nieuwe migratie. */
-export const SCHEMA_VERSION = 6;
+export const SCHEMA_VERSION = 7;
 
 /** Aantal sets dat een nieuwe template-oefening standaard krijgt. */
 export const DEFAULT_TEMPLATE_SETS = 3;
@@ -28,13 +28,15 @@ export const SYNCABLE_TABLES = [
   'workout_exercises',
   'workout_sets',
   'goals',
+  'body_metrics',
 ] as const;
 
 /**
  * Tabellen die migratie 3 van sync-metadata voorzag. Dit is een bevroren
- * momentopname: nieuwere syncbare tabellen (zoals `goals`) regelen hun eigen
- * metadata in de migratie die ze aanmaakt. Zo blijft migratie 3 deterministisch
- * en probeert ze nooit een tabel te wijzigen die op dat punt nog niet bestaat.
+ * momentopname: nieuwere syncbare tabellen (zoals `goals` en `body_metrics`)
+ * regelen hun eigen metadata in de migratie die ze aanmaakt. Zo blijft migratie
+ * 3 deterministisch en probeert ze nooit een tabel te wijzigen die op dat punt
+ * nog niet bestaat.
  */
 const MIGRATION3_TABLES = [
   'exercises',
@@ -61,6 +63,40 @@ const UUID_V4 = `lower(
 function columnExists(db: SQLiteDatabase, table: string, column: string): boolean {
   const rows = db.getAllSync<{ name: string }>(`PRAGMA table_info(${table})`);
   return rows.some((r) => r.name === column);
+}
+
+/**
+ * Maakt de sync-indexen + triggers voor een tabel die de sync-metadata-kolommen
+ * (uuid, updated_at, version, deleted) al bezit. Idempotent dankzij IF NOT
+ * EXISTS, zodat herhaald draaien veilig is. De insert-trigger vult een
+ * ontbrekende uuid/updated_at aan; de update-trigger bumpt version + updated_at
+ * bij een lokale wijziging, maar slaat over wanneer de sync-laag version
+ * expliciet zet (NEW.version != OLD.version) — zo wint de remote-versie.
+ */
+function addSyncScaffolding(db: SQLiteDatabase, table: string): void {
+  db.execSync(`CREATE UNIQUE INDEX IF NOT EXISTS idx_${table}_uuid ON ${table}(uuid)`);
+  db.execSync(`CREATE INDEX IF NOT EXISTS idx_${table}_updated_at ON ${table}(updated_at)`);
+
+  db.execSync(`
+    CREATE TRIGGER IF NOT EXISTS trg_${table}_insert AFTER INSERT ON ${table}
+    BEGIN
+      UPDATE ${table} SET
+        uuid = COALESCE(NEW.uuid, (${UUID_V4})),
+        updated_at = COALESCE(NEW.updated_at, datetime('now'))
+      WHERE id = NEW.id;
+    END;
+  `);
+
+  db.execSync(`
+    CREATE TRIGGER IF NOT EXISTS trg_${table}_update AFTER UPDATE ON ${table}
+    WHEN NEW.version = OLD.version
+    BEGIN
+      UPDATE ${table} SET
+        version = OLD.version + 1,
+        updated_at = datetime('now')
+      WHERE id = NEW.id;
+    END;
+  `);
 }
 
 // ---------- Migratie 1: basistabellen ----------
@@ -155,37 +191,10 @@ function migration3(db: SQLiteDatabase): void {
     db.execSync(`UPDATE ${table} SET uuid = (${UUID_V4}) WHERE uuid IS NULL`);
     db.execSync(`UPDATE ${table} SET updated_at = datetime('now') WHERE updated_at IS NULL`);
 
-    db.execSync(`CREATE UNIQUE INDEX IF NOT EXISTS idx_${table}_uuid ON ${table}(uuid)`);
-    db.execSync(
-      `CREATE INDEX IF NOT EXISTS idx_${table}_updated_at ON ${table}(updated_at)`
-    );
-
-    // Triggers houden de metadata zelf bij, zonder dat elke query dat hoeft te
-    // doen. recursive_triggers staat standaard UIT, dus de inner-UPDATE in deze
-    // triggers vuurt niet opnieuw.
-    db.execSync(`
-      CREATE TRIGGER IF NOT EXISTS trg_${table}_insert AFTER INSERT ON ${table}
-      BEGIN
-        UPDATE ${table} SET
-          uuid = COALESCE(NEW.uuid, (${UUID_V4})),
-          updated_at = COALESCE(NEW.updated_at, datetime('now'))
-        WHERE id = NEW.id;
-      END;
-    `);
-
-    // Bij een gewone lokale wijziging (version onaangeroerd) bumpen we version
-    // + updated_at. Zet de sync-laag version expliciet (NEW.version != OLD.version),
-    // dan slaat de trigger over en wordt de remote-versie gerespecteerd.
-    db.execSync(`
-      CREATE TRIGGER IF NOT EXISTS trg_${table}_update AFTER UPDATE ON ${table}
-      WHEN NEW.version = OLD.version
-      BEGIN
-        UPDATE ${table} SET
-          version = OLD.version + 1,
-          updated_at = datetime('now')
-        WHERE id = NEW.id;
-      END;
-    `);
+    // Indexen + triggers houden de metadata zelf bij, zonder dat elke query dat
+    // hoeft te doen. recursive_triggers staat standaard UIT, dus de inner-UPDATE
+    // in deze triggers vuurt niet opnieuw.
+    addSyncScaffolding(db, table);
   }
 }
 
@@ -264,6 +273,35 @@ function migration6(db: SQLiteDatabase): void {
   }
 }
 
+// ---------- Migratie 7: RPE, dag-notities + lichaamsmetingen ----------
+
+function migration7(db: SQLiteDatabase): void {
+  // Optionele RPE (Rate of Perceived Exertion) per set.
+  if (!columnExists(db, 'workout_sets', 'rpe')) {
+    db.execSync('ALTER TABLE workout_sets ADD COLUMN rpe REAL');
+  }
+  // Vrije notities per workout-dag.
+  if (!columnExists(db, 'workout_days', 'notes')) {
+    db.execSync('ALTER TABLE workout_days ADD COLUMN notes TEXT');
+  }
+
+  // Lichaamsmetingen (gewicht/vetpercentage) — syncbaar, dus mét sync-metadata.
+  db.execSync(`
+    CREATE TABLE IF NOT EXISTS body_metrics (
+      id          INTEGER PRIMARY KEY AUTOINCREMENT,
+      date        TEXT NOT NULL UNIQUE,
+      weight      REAL,
+      body_fat    REAL,
+      note        TEXT,
+      uuid        TEXT,
+      updated_at  TEXT,
+      version     INTEGER NOT NULL DEFAULT 1,
+      deleted     INTEGER NOT NULL DEFAULT 0
+    );
+  `);
+  addSyncScaffolding(db, 'body_metrics');
+}
+
 const MIGRATIONS: Record<number, (db: SQLiteDatabase) => void> = {
   1: migration1,
   2: migration2,
@@ -271,6 +309,7 @@ const MIGRATIONS: Record<number, (db: SQLiteDatabase) => void> = {
   4: migration4,
   5: migration5,
   6: migration6,
+  7: migration7,
 };
 
 /**

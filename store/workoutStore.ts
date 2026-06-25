@@ -9,11 +9,13 @@ import {
   getOrCreateWorkoutDay,
   getWorkoutDayByDate,
   getWorkoutDaysInRange,
+  getWorkoutNotes,
   getWorkoutWithSets,
   removeSetByNumber,
   removeWorkoutExercise,
   reopenWorkout,
   setRestDay as dbSetRestDay,
+  setWorkoutNotes as dbSetWorkoutNotes,
   upsertSet,
 } from '@/db/queries/workouts';
 import { applyTemplateToWeek, getTemplateDayLabel } from '@/db/queries/templates';
@@ -36,7 +38,9 @@ interface WorkoutStore {
   todayExercises: ExerciseWithSets[];
   todayCompletedAt?: string;
   todaySessionLabel?: string;
+  todayNotes: string;
   loadToday: (date?: string) => Promise<void>;
+  saveTodayNotes: (notes: string) => Promise<void>;
   saveSet: (workoutExerciseId: number, set: Partial<WorkoutSet>) => Promise<void>;
   addSetToExercise: (workoutExerciseId: number) => Promise<void>;
   removeSet: (workoutExerciseId: number, setNumber: number) => Promise<void>;
@@ -81,6 +85,7 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
   todayExercises: [],
   todayCompletedAt: undefined,
   todaySessionLabel: undefined,
+  todayNotes: '',
 
   loadToday: async (date) => {
     const target = date ?? get().todayDate;
@@ -94,12 +99,24 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
       todaySessionLabel: day?.templateDayId
         ? getTemplateDayLabel(day.templateDayId)
         : undefined,
+      todayNotes: getWorkoutNotes(target),
     });
+  },
+
+  saveTodayNotes: async (notes) => {
+    dbSetWorkoutNotes(get().todayDate, notes);
+    set({ todayNotes: notes });
   },
 
   saveSet: async (workoutExerciseId, partial) => {
     const setNumber = partial.setNumber ?? 1;
-    upsertSet(workoutExerciseId, setNumber, partial.weight ?? 0, partial.reps ?? 0);
+    upsertSet(
+      workoutExerciseId,
+      setNumber,
+      partial.weight ?? 0,
+      partial.reps ?? 0,
+      partial.rpe ?? null
+    );
     await get().loadToday();
   },
 

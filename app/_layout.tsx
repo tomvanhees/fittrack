@@ -78,15 +78,31 @@ export default function RootLayout() {
             contentStyle: { backgroundColor: colors.background },
           }}
         >
-          <Stack.Screen name="(tabs)" />
-          <Stack.Screen name="library" />
-          <Stack.Screen name="progress" />
-          <Stack.Screen name="goals" />
-          <Stack.Screen name="modals/add-exercise" options={{ presentation: 'modal' }} />
-          <Stack.Screen name="modals/edit-template" options={{ presentation: 'modal' }} />
-          <Stack.Screen name="modals/exercise-detail" options={{ presentation: 'modal' }} />
-          <Stack.Screen name="modals/auth" options={{ presentation: 'modal' }} />
-          <Stack.Screen name="modals/goal-edit" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="library" options={{ title: 'Bibliotheek' }} />
+          <Stack.Screen name="progress" options={{ title: 'Voortgang' }} />
+          <Stack.Screen name="goals" options={{ title: 'Doelen' }} />
+          <Stack.Screen name="body" options={{ title: 'Lichaam' }} />
+          <Stack.Screen
+            name="modals/add-exercise"
+            options={{ presentation: 'modal', title: 'Oefening toevoegen' }}
+          />
+          <Stack.Screen
+            name="modals/edit-template"
+            options={{ presentation: 'modal', title: 'Template' }}
+          />
+          <Stack.Screen
+            name="modals/exercise-detail"
+            options={{ presentation: 'modal', title: 'Oefening' }}
+          />
+          <Stack.Screen
+            name="modals/auth"
+            options={{ presentation: 'modal', title: 'Account' }}
+          />
+          <Stack.Screen
+            name="modals/goal-edit"
+            options={{ presentation: 'modal', title: 'Doel' }}
+          />
         </Stack>
       </SafeAreaProvider>
     </GestureHandlerRootView>
