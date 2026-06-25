@@ -19,7 +19,7 @@ describe('<SetRow />', () => {
       <SetRow setNumber={1} previousSet={previousSet} editable accent="#FF4D6D" onSave={jest.fn()} />
     );
     expect(screen.getByText('1')).toBeOnTheScreen();
-    expect(screen.getByText('vorige 80×8')).toBeOnTheScreen();
+    expect(screen.getByText('80×8')).toBeOnTheScreen();
   });
 
   it('toont "nieuw" wanneer er geen vorige set is', () => {

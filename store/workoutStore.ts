@@ -5,7 +5,7 @@ import {
   addExerciseToDay,
   addSet,
   completeWorkout as dbCompleteWorkout,
-  getExerciseNamesForDay,
+  getExerciseSummariesForDay,
   getOrCreateWorkoutDay,
   getWorkoutDayByDate,
   getWorkoutDaysInRange,
@@ -20,16 +20,18 @@ import {
 } from '@/db/queries/workouts';
 import { applyTemplateToWeek, getTemplateDayLabel } from '@/db/queries/templates';
 import { todayISO, weekDatesOf } from '@/lib/date';
+import type { DayExerciseSummary } from '@/db/queries/workouts';
 import type { ExerciseWithSets, WorkoutDay, WorkoutSet } from '@/types';
 
 export interface WeekDayInfo {
   date: string;
   weekday: number;          // 0=zo..6=za
   day: WorkoutDay | null;
-  exerciseNames: string[];
+  exercises: DayExerciseSummary[];
   hasWorkout: boolean;
   isRestDay: boolean;
   isCompleted: boolean;
+  note?: string;
 }
 
 interface WorkoutStore {
@@ -66,15 +68,16 @@ function buildWeekDays(anchorDate: string): WeekDayInfo[] {
 
   return dates.map((date) => {
     const day = byDate.get(date) ?? null;
-    const names = day ? getExerciseNamesForDay(day.id) : [];
+    const exercises = day ? getExerciseSummariesForDay(day.id) : [];
     return {
       date,
       weekday: new Date(date).getDay(),
       day,
-      exerciseNames: names,
-      hasWorkout: names.length > 0,
+      exercises,
+      hasWorkout: exercises.length > 0,
       isRestDay: day?.isRestDay ?? false,
       isCompleted: !!day?.completedAt,
+      note: day?.notes?.trim() ? day.notes.trim() : undefined,
     };
   });
 }

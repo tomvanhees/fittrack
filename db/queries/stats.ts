@@ -170,6 +170,84 @@ export function getExerciseRecords(exerciseId: number): ExerciseRecords {
   return records;
 }
 
+/** Eén regel in het gecombineerde records-overzicht ("high scores"). */
+export interface ExerciseRecordSummary {
+  exerciseId: number;
+  name: string;
+  category: Category;
+  /** Hoogste geschatte 1RM (Epley) over alle gelogde sets. */
+  bestEstimated1RM: number;
+  /** Zwaarste gelogde set (kg). */
+  maxWeight: number;
+  /** Hoogste volume in één set (gewicht × reps). */
+  bestSetVolume: number;
+  /** Meeste reps in één set. */
+  maxReps: number;
+  /** Aantal meetellende sets (gewicht > 0 én reps > 0). */
+  setCount: number;
+  /** Meest recente datum met een meetellende set. */
+  lastDate: string;
+}
+
+/**
+ * Records voor álle oefeningen met minstens één meetellende set (gewicht > 0
+ * én reps > 0), in één query berekend en in JS geaggregeerd. Gesorteerd op
+ * geschatte 1RM (aflopend) — de "high scores". Oefeningen zonder gelogde sets
+ * komen niet voor in het resultaat.
+ */
+export function getAllExerciseRecords(): ExerciseRecordSummary[] {
+  const rows = db.getAllSync<{
+    exercise_id: number;
+    name: string;
+    category: string;
+    weight: number;
+    reps: number;
+    date: string;
+  }>(
+    `SELECT e.id AS exercise_id, e.name AS name, e.category AS category,
+            ws.weight AS weight, ws.reps AS reps, wd.date AS date
+       FROM workout_sets ws
+       JOIN workout_exercises we ON we.id = ws.workout_exercise_id
+       JOIN workout_days wd ON wd.id = we.workout_day_id
+       JOIN exercises e ON e.id = we.exercise_id
+      WHERE we.deleted = 0
+        AND ws.deleted = 0
+        AND ws.weight > 0
+        AND ws.reps > 0`
+  );
+
+  const byExercise = new Map<number, ExerciseRecordSummary>();
+  for (const r of rows) {
+    const e1rm = r.reps === 1 ? r.weight : r.weight * (1 + r.reps / 30);
+    const volume = r.weight * r.reps;
+    let agg = byExercise.get(r.exercise_id);
+    if (!agg) {
+      agg = {
+        exerciseId: r.exercise_id,
+        name: r.name,
+        category: r.category as Category,
+        bestEstimated1RM: 0,
+        maxWeight: 0,
+        bestSetVolume: 0,
+        maxReps: 0,
+        setCount: 0,
+        lastDate: r.date,
+      };
+      byExercise.set(r.exercise_id, agg);
+    }
+    agg.bestEstimated1RM = Math.max(agg.bestEstimated1RM, e1rm);
+    agg.maxWeight = Math.max(agg.maxWeight, r.weight);
+    agg.bestSetVolume = Math.max(agg.bestSetVolume, volume);
+    agg.maxReps = Math.max(agg.maxReps, r.reps);
+    agg.setCount += 1;
+    if (r.date > agg.lastDate) agg.lastDate = r.date;
+  }
+
+  return [...byExercise.values()].sort(
+    (a, b) => b.bestEstimated1RM - a.bestEstimated1RM
+  );
+}
+
 /**
  * Beste geschatte 1RM (Epley) voor een oefening uit sessies strikt vóór
  * `beforeISO`. Wordt gebruikt om te bepalen of de set van vandaag een nieuw

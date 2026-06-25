@@ -175,6 +175,20 @@ export default function SettingsScreen() {
         </Pressable>
       </View>
 
+      <Text style={styles.sectionTitle}>Records</Text>
+      <View style={styles.card}>
+        <Pressable style={styles.action} onPress={() => router.push('/records')}>
+          <Ionicons name="trophy-outline" size={20} color={accent} />
+          <View style={styles.actionBody}>
+            <Text style={styles.actionTitle}>High scores</Text>
+            <Text style={styles.actionSubtitle}>
+              Je persoonlijke records per oefening, gerangschikt op geschatte 1RM.
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+        </Pressable>
+      </View>
+
       <Text style={styles.sectionTitle}>Doelen</Text>
       <View style={styles.card}>
         <Pressable style={styles.action} onPress={() => router.push('/goals')}>

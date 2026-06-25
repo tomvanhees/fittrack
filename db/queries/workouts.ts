@@ -325,17 +325,49 @@ export function getWorkoutWithSets(date: string): ExerciseWithSets[] {
   return result;
 }
 
-/** Namen van de geplande oefeningen voor een dag (voor het weekoverzicht). */
-export function getExerciseNamesForDay(workoutDayId: number): string[] {
-  const rows = db.getAllSync<{ name: string }>(
-    `SELECT e.name AS name
+/** Oefening met de gelogde sets (gewicht × reps) voor een dag (weekoverzicht). */
+export interface DayExerciseSummary {
+  name: string;
+  /** Gelogde, niet-verwijderde sets in setvolgorde. */
+  sets: { weight: number; reps: number }[];
+}
+
+/**
+ * Geplande oefeningen van een dag met per oefening de gelogde
+ * (niet-verwijderde) sets — gewicht én reps, in setvolgorde — voor het
+ * weekoverzicht. Eén query voor de hele dag; we groeperen in JS. Een oefening
+ * zonder sets levert een lege `sets`-array (LEFT JOIN).
+ */
+export function getExerciseSummariesForDay(workoutDayId: number): DayExerciseSummary[] {
+  const rows = db.getAllSync<{
+    we_id: number;
+    name: string;
+    weight: number | null;
+    reps: number | null;
+  }>(
+    `SELECT we.id AS we_id, e.name AS name, ws.weight AS weight, ws.reps AS reps
        FROM workout_exercises we
        JOIN exercises e ON e.id = we.exercise_id
+       LEFT JOIN workout_sets ws ON ws.workout_exercise_id = we.id AND ws.deleted = 0
       WHERE we.workout_day_id = ? AND we.deleted = 0
-      ORDER BY we.sort_order ASC, we.id ASC`,
+      ORDER BY we.sort_order ASC, we.id ASC, ws.set_number ASC`,
     [workoutDayId]
   );
-  return rows.map((r) => r.name);
+
+  const byExercise = new Map<number, DayExerciseSummary>();
+  const order: number[] = [];
+  for (const r of rows) {
+    let summary = byExercise.get(r.we_id);
+    if (!summary) {
+      summary = { name: r.name, sets: [] };
+      byExercise.set(r.we_id, summary);
+      order.push(r.we_id);
+    }
+    if (r.weight !== null || r.reps !== null) {
+      summary.sets.push({ weight: r.weight ?? 0, reps: r.reps ?? 0 });
+    }
+  }
+  return order.map((id) => byExercise.get(id)!);
 }
 
 /** Laatste N sessies (met sets) van een oefening — voor het detailscherm. */

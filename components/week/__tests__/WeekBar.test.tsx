@@ -10,7 +10,7 @@ function buildWeek(): WeekDayInfo[] {
     date,
     weekday: weekdayOf(date),
     day: null,
-    exerciseNames: [],
+    exercises: [],
     hasWorkout: false,
     isRestDay: false,
     isCompleted: false,

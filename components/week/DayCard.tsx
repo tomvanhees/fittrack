@@ -15,6 +15,18 @@ interface DayCardProps {
   onToggleRest: () => void;
 }
 
+/** Gewicht compact, met NL-decimaalkomma: 22.5 → "22,5", 20 → "20". */
+function formatWeight(kg: number): string {
+  return String(kg).replace('.', ',');
+}
+
+/** Eén set als "12kg×1"; valt terug op enkel gewicht of enkel reps. */
+function formatSet(set: { weight: number; reps: number }): string {
+  const w = set.weight > 0 ? `${formatWeight(set.weight)}kg` : '';
+  const r = set.reps > 0 ? `×${set.reps}` : '';
+  return `${w}${r}` || '—';
+}
+
 export function DayCard({ day, onEdit, onApplyTemplate, onToggleRest }: DayCardProps) {
   const { accent } = useAccent();
   return (
@@ -34,7 +46,7 @@ export function DayCard({ day, onEdit, onApplyTemplate, onToggleRest }: DayCardP
 
       {day.isRestDay ? (
         <EmptyState icon="moon" title="Rustdag" subtitle="Geen workout gepland." />
-      ) : day.exerciseNames.length === 0 ? (
+      ) : day.exercises.length === 0 ? (
         <EmptyState
           icon="add-circle-outline"
           title="Nog niets gepland"
@@ -42,29 +54,54 @@ export function DayCard({ day, onEdit, onApplyTemplate, onToggleRest }: DayCardP
         />
       ) : (
         <View style={styles.list}>
-          {day.exerciseNames.map((name, i) => (
-            <View key={`${name}-${i}`} style={styles.item}>
-              <View style={[styles.bullet, { backgroundColor: accent }]} />
-              <Text style={styles.itemText}>{name}</Text>
+          {day.exercises.map((ex, i) => (
+            <View key={`${ex.name}-${i}`} style={styles.item}>
+              <View style={styles.itemHeader}>
+                <View style={[styles.bullet, { backgroundColor: accent }]} />
+                <Text style={styles.itemText} numberOfLines={1}>
+                  {ex.name}
+                </Text>
+                {ex.sets.length > 0 ? (
+                  <Text style={styles.setCount}>
+                    {ex.sets.length} {ex.sets.length === 1 ? 'set' : 'sets'}
+                  </Text>
+                ) : null}
+              </View>
+              {ex.sets.length > 0 ? (
+                <Text style={styles.setDetail}>
+                  {ex.sets.map(formatSet).join(' · ')}
+                </Text>
+              ) : null}
             </View>
           ))}
         </View>
       )}
 
-      <View style={styles.actions}>
-        <Pressable style={[styles.btn, { backgroundColor: accent }]} onPress={onEdit}>
-          <Ionicons name="create-outline" size={16} color={colors.primaryText} />
-          <Text style={styles.btnPrimaryText}>Bewerken</Text>
-        </Pressable>
-        <Pressable style={[styles.btn, styles.btnSecondary]} onPress={onApplyTemplate}>
-          <Ionicons name="clipboard-outline" size={16} color={colors.text} />
-          <Text style={styles.btnSecondaryText}>Template</Text>
-        </Pressable>
-        <Pressable style={[styles.btn, styles.btnSecondary]} onPress={onToggleRest}>
-          <Ionicons name="moon-outline" size={16} color={colors.text} />
-          <Text style={styles.btnSecondaryText}>{day.isRestDay ? 'Actief' : 'Rust'}</Text>
-        </Pressable>
-      </View>
+      {day.note ? (
+        <View style={styles.note}>
+          <Ionicons name="document-text-outline" size={15} color={colors.textMuted} />
+          <Text style={styles.noteText}>{day.note}</Text>
+        </View>
+      ) : null}
+
+      {/* Een afgeronde workout is vergrendeld: niet meer bewerken, een template
+          toepassen of als rustdag instellen. */}
+      {day.isCompleted ? null : (
+        <View style={styles.actions}>
+          <Pressable style={[styles.btn, { backgroundColor: accent }]} onPress={onEdit}>
+            <Ionicons name="create-outline" size={16} color={colors.primaryText} />
+            <Text style={styles.btnPrimaryText}>Bewerken</Text>
+          </Pressable>
+          <Pressable style={[styles.btn, styles.btnSecondary]} onPress={onApplyTemplate}>
+            <Ionicons name="clipboard-outline" size={16} color={colors.text} />
+            <Text style={styles.btnSecondaryText}>Template</Text>
+          </Pressable>
+          <Pressable style={[styles.btn, styles.btnSecondary]} onPress={onToggleRest}>
+            <Ionicons name="moon-outline" size={16} color={colors.text} />
+            <Text style={styles.btnSecondaryText}>{day.isRestDay ? 'Actief' : 'Rust'}</Text>
+          </Pressable>
+        </View>
+      )}
     </View>
   );
 }
@@ -109,9 +146,12 @@ const styles = StyleSheet.create({
     marginVertical: spacing.md,
   },
   list: {
-    gap: spacing.sm,
+    gap: spacing.md,
   },
   item: {
+    gap: 2,
+  },
+  itemHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
@@ -123,8 +163,35 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
   },
   itemText: {
+    flex: 1,
     color: colors.text,
     fontSize: fontSize.md,
+  },
+  setCount: {
+    color: colors.textMuted,
+    fontSize: fontSize.sm,
+    fontFamily: fonts.jakarta600,
+  },
+  setDetail: {
+    marginLeft: 6 + spacing.sm, // uitlijnen voorbij de bullet
+    color: colors.textFaint,
+    fontSize: fontSize.sm,
+    fontFamily: fonts.jakarta500,
+  },
+  note: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+    marginTop: spacing.md,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  noteText: {
+    flex: 1,
+    color: colors.textMuted,
+    fontSize: fontSize.sm,
+    lineHeight: 19,
   },
   actions: {
     flexDirection: 'row',

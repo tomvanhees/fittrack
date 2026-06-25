@@ -61,8 +61,11 @@ export function SetRow({
   const hasReps = reps !== '' && parseInt(reps, 10) > 0;
   const filled = hasWeight && hasReps;
 
+  // Geen "vorige"-prefix: het herhaalt op elke rij en duwde de waarde uit beeld
+  // (afgekapt op smalle kaarten). De gedempte tekst naast de set-chip leest al
+  // als referentie van de vorige sessie.
   const prevLabel = previousSet
-    ? `vorige ${numToStr(previousSet.weight) || '0'}×${previousSet.reps}`
+    ? `${numToStr(previousSet.weight) || '0'}×${previousSet.reps}`
     : 'nieuw';
 
   return (
